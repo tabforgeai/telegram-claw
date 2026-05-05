@@ -1,0 +1,24 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Maven build output
+telegram-claw-relay/target/
+
+# Private planning document
+TELEGRAM_CLAW_PLAN.md
+
+# Android app module — committed separately in Phase 2
+app/
