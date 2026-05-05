@@ -121,8 +121,8 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 You can run the relay server locally and watch Claude parse your Telegram messages in real time —
 no Android device needed yet. Two guides walk you through it step by step:
 
-1. [`docs/smoke-test-phase1.md`](docs/smoke-test-phase1.md) — get the relay server running and receive your first Telegram message
-2. [`docs/smoke-test-phase1-day3-4.md`](docs/smoke-test-phase1-day3-4.md) — send *"Is he sleeping?"* and watch Claude decide which tool to call
+1. [`docs/smoke-test-phase1.md`](telegram-claw-relay/docs/smoke-test-phase1.md) — get the relay server running and receive your first Telegram message
+2. [`docs/smoke-test-phase1-day3-4.md`](telegram-claw-relay/docs/smoke-test-phase1-day3-4.md) — send *"Is he sleeping?"* and watch Claude decide which tool to call
 
 All you need: Java 21, Maven, a Telegram bot token (free, 2 minutes via BotFather), and an Anthropic API key.
 
@@ -154,8 +154,8 @@ Telegram Claw is designed to be self-hosted. You own everything:
 - Your Android device (the Claw app installed as an APK)
 
 Setup guides:
-- [`docs/smoke-test-phase1.md`](docs/smoke-test-phase1.md) — get the relay server running locally
-- [`docs/smoke-test-phase1-day3-4.md`](docs/smoke-test-phase1-day3-4.md) — verify Claude intent parsing works
+- [`docs/smoke-test-phase1.md`](telegram-claw-relay/docs/smoke-test-phase1.md) — get the relay server running locally
+- [`docs/smoke-test-phase1-day3-4.md`](telegram-claw-relay/docs/smoke-test-phase1-day3-4.md) — verify Claude intent parsing works
 
 Full self-hosting guide coming with `v1.0.0`.
 
