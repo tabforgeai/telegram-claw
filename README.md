@@ -2,6 +2,8 @@
 
 > OpenClaw for Android — built for people, not developers.
 
+![Telegram Claw — one phone controls another](assets/telegram-claw-banner.png)
+
 You want to know if your elderly parent is okay. Whether your kid got home. Whether your partner is awake.
 You don't want to call. You don't want to install an app on their phone and explain how it works.
 You just want to send a message — and get an answer.
