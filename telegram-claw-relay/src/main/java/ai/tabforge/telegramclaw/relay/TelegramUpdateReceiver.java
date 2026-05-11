@@ -34,26 +34,30 @@ public class TelegramUpdateReceiver implements HttpHandler {
 
     private final IntentParser intentParser;
     private final CommandDispatcher commandDispatcher;
+    private final AuthorizationService authorizationService;
 
     /**
-     * Constructs a TelegramUpdateReceiver wired to IntentParser and CommandDispatcher.
+     * Constructs a TelegramUpdateReceiver wired to all processing pipeline components.
      *
      * <p>Analogy: like assembling a processing line in a factory — the conveyor belt
-     * (this class) moves each item (Telegram message) through two stations: the translator
-     * (IntentParser) determines what to do, and the dispatcher (CommandDispatcher) sends
-     * the work order to the factory floor (Android device). The dispatcher may be null
-     * if Firebase is not configured, in which case commands are parsed but not sent.</p>
+     * (this class) moves each item (Telegram message) through three stations in order:
+     * the security gate (AuthorizationService) rejects unauthorized senders,
+     * the translator (IntentParser) determines what to do,
+     * and the dispatcher (CommandDispatcher) sends the work order to the factory floor
+     * (Android device). The dispatcher may be null if Firebase is not configured.</p>
      *
      * <p>Called by: {@link Main#main} once at startup.</p>
      *
-     * @param intentParser       the IntentParser that calls Claude to produce a ClawCommand
-     * @param commandDispatcher  the CommandDispatcher that sends commands via FCM;
-     *                           may be null if GOOGLE_APPLICATION_CREDENTIALS or
-     *                           FCM_DEVICE_TOKEN env vars are not set
+     * @param intentParser         calls Claude to produce a ClawCommand from natural language
+     * @param commandDispatcher    sends commands via FCM; may be null if Firebase is not configured
+     * @param authorizationService checks whether a Telegram user ID is on the whitelist
      */
-    public TelegramUpdateReceiver(IntentParser intentParser, CommandDispatcher commandDispatcher) {
+    public TelegramUpdateReceiver(IntentParser intentParser,
+                                  CommandDispatcher commandDispatcher,
+                                  AuthorizationService authorizationService) {
         this.intentParser = intentParser;
         this.commandDispatcher = commandDispatcher;
+        this.authorizationService = authorizationService;
     }
 
     /**
@@ -134,6 +138,12 @@ public class TelegramUpdateReceiver implements HttpHandler {
 
         if (sender == null) {
             log.warn("[MESSAGE] Received message with no sender — ignoring.");
+            return;
+        }
+
+        if (!authorizationService.isAuthorized(sender.getId())) {
+            log.warn("[DENIED] Unauthorized sender: {} (id={}) — message rejected.",
+                    sender.displayName(), sender.getId());
             return;
         }
 

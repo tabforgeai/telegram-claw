@@ -70,6 +70,9 @@ public class Main {
             }
         }
 
+        String authorizedIds = System.getenv("AUTHORIZED_USER_IDS");
+        AuthorizationService authorizationService = new AuthorizationService(authorizedIds);
+
         AnthropicClient anthropicClient = AnthropicOkHttpClient.fromEnv();
         IntentParser intentParser = new IntentParser(anthropicClient);
 
@@ -90,7 +93,7 @@ public class Main {
 
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher));
+        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService));
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
 
@@ -107,22 +110,24 @@ public class Main {
      * <p>Called by: main(), once before any network activity.</p>
      */
     private static void printStartupBanner() {
-        String token       = System.getenv("TELEGRAM_BOT_TOKEN");
-        String webhook     = System.getenv("WEBHOOK_URL");
-        String anthropicKey = System.getenv("ANTHROPIC_API_KEY");
-        String credentials = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-        String fcmToken    = System.getenv("FCM_DEVICE_TOKEN");
-        String model       = System.getenv().getOrDefault("CLAUDE_MODEL", "claude-haiku-4-5-20251001");
-        String port        = System.getenv().getOrDefault("PORT", "8080");
+        String token         = System.getenv("TELEGRAM_BOT_TOKEN");
+        String webhook       = System.getenv("WEBHOOK_URL");
+        String anthropicKey  = System.getenv("ANTHROPIC_API_KEY");
+        String credentials   = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        String fcmToken      = System.getenv("FCM_DEVICE_TOKEN");
+        String authIds       = System.getenv("AUTHORIZED_USER_IDS");
+        String model         = System.getenv().getOrDefault("CLAUDE_MODEL", "claude-haiku-4-5-20251001");
+        String port          = System.getenv().getOrDefault("PORT", "8080");
 
-        String tokenStatus       = (token        != null && !token.isBlank())        ? "SET" : "NOT SET (required)";
-        String webhookStatus     = (webhook      != null && !webhook.isBlank())      ? webhook : "NOT SET — run ngrok first";
+        String tokenStatus       = (token       != null && !token.isBlank())       ? "SET" : "NOT SET (required)";
+        String webhookStatus     = (webhook     != null && !webhook.isBlank())     ? webhook : "NOT SET — run ngrok first";
         String anthropicStatus   = (anthropicKey != null && !anthropicKey.isBlank()) ? "SET" : "NOT SET (required)";
-        String credentialsStatus = (credentials  != null && !credentials.isBlank())  ? credentials : "NOT SET — FCM disabled";
-        String fcmTokenStatus    = (fcmToken     != null && !fcmToken.isBlank())     ? "SET" : "NOT SET — FCM disabled";
+        String credentialsStatus = (credentials != null && !credentials.isBlank()) ? credentials : "NOT SET — FCM disabled";
+        String fcmTokenStatus    = (fcmToken    != null && !fcmToken.isBlank())    ? "SET" : "NOT SET — FCM disabled";
+        String authStatus        = (authIds     != null && !authIds.isBlank())     ? authIds : "NOT SET — open access";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 5-6");
+        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 7");
         log.info("---------------------------------------------------");
         log.info("  PORT:                           {}", port);
         log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);
@@ -131,6 +136,7 @@ public class Main {
         log.info("  CLAUDE_MODEL:                   {}", model);
         log.info("  GOOGLE_APPLICATION_CREDENTIALS: {}", credentialsStatus);
         log.info("  FCM_DEVICE_TOKEN:               {}", fcmTokenStatus);
+        log.info("  AUTHORIZED_USER_IDS:            {}", authStatus);
         log.info("---------------------------------------------------");
     }
 }
