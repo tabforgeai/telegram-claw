@@ -93,7 +93,9 @@ public class Main {
 
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService));
+        ResponseRouter responseRouter = new ResponseRouter(botToken);
+
+        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService, responseRouter));
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
 
@@ -127,7 +129,7 @@ public class Main {
         String authStatus        = (authIds     != null && !authIds.isBlank())     ? authIds : "NOT SET — open access";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 7");
+        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 8");
         log.info("---------------------------------------------------");
         log.info("  PORT:                           {}", port);
         log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);

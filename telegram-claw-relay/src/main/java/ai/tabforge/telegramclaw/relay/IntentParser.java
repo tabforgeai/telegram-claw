@@ -43,9 +43,12 @@ public class IntentParser {
             "An authorized Telegram user has sent you a natural language request — they want to " +
             "perform some action on a remote Android device. " +
             "Your job is to identify exactly which tool to call and with what parameters. " +
-            "You MUST respond by calling exactly one of the provided tools. " +
-            "Never respond with plain text alone — always call a tool. " +
-            "The user may write in Serbian, English, or any other language — handle all of them.";
+            "You MUST always call exactly one of the provided tools. " +
+            "You MUST also include a brief 1-2 sentence plain text reply in the same language the user wrote in — " +
+            "this reply will be sent back to Person A as a Telegram message confirming what action is being taken. " +
+            "The text reply should be conversational and confirm the action, for example: " +
+            "'Turning the ringer up to maximum. Sending the command to the device now.' " +
+            "The user may write in Serbian, English, or any other language — respond in the same language.";
 
     private final AnthropicClient client;
     private final String model;

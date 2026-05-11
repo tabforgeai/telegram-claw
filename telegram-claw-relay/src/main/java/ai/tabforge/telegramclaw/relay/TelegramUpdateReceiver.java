@@ -35,6 +35,7 @@ public class TelegramUpdateReceiver implements HttpHandler {
     private final IntentParser intentParser;
     private final CommandDispatcher commandDispatcher;
     private final AuthorizationService authorizationService;
+    private final ResponseRouter responseRouter;
 
     /**
      * Constructs a TelegramUpdateReceiver wired to all processing pipeline components.
@@ -51,13 +52,16 @@ public class TelegramUpdateReceiver implements HttpHandler {
      * @param intentParser         calls Claude to produce a ClawCommand from natural language
      * @param commandDispatcher    sends commands via FCM; may be null if Firebase is not configured
      * @param authorizationService checks whether a Telegram user ID is on the whitelist
+     * @param responseRouter       sends Claude's reply back to Person A via Telegram sendMessage
      */
     public TelegramUpdateReceiver(IntentParser intentParser,
                                   CommandDispatcher commandDispatcher,
-                                  AuthorizationService authorizationService) {
+                                  AuthorizationService authorizationService,
+                                  ResponseRouter responseRouter) {
         this.intentParser = intentParser;
         this.commandDispatcher = commandDispatcher;
         this.authorizationService = authorizationService;
+        this.responseRouter = responseRouter;
     }
 
     /**
@@ -165,7 +169,9 @@ public class TelegramUpdateReceiver implements HttpHandler {
                 } else {
                     log.debug("[DISPATCH_SKIP] FCM not configured — command parsed but not sent.");
                 }
-                // TODO Phase 1 Day 8: forward command to ResponseRouter (Telegram reply)
+
+                responseRouter.sendReply(command.getSenderChatId(),
+                        command.getNaturalLanguageReply(), command.getToolName());
             } catch (IntentParseException e) {
                 log.warn("[INTENT_FAIL] Could not parse intent from \"{}\": {}", text, e.getMessage());
             }
