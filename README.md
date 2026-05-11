@@ -103,7 +103,7 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 
 ## Current Status
 
-> This project is in active development. The relay server foundation is complete and working.
+> `v0.1.0` — Relay server complete. Android app in development (Phase 2).
 
 **What works right now:**
 
@@ -112,19 +112,22 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 | ✅ | Relay server receives Telegram messages via webhook |
 | ✅ | Claude AI parses natural language into structured tool calls |
 | ✅ | All 6 tool definitions built and sent to Claude on every message |
-| ✅ | Smoke tests documented and verified end-to-end |
-| 🔜 | FCM push — command dispatched to Android device (Day 5–6) |
+| ✅ | FCM push — command dispatched to Android device via Firebase |
+| ✅ | Telegram reply sent back to Person A in natural language |
+| ✅ | Authorization — Telegram user ID whitelist (only approved senders accepted) |
+| ✅ | Rate limiting — auto-freeze on command flood (Protocol 8) |
+| ✅ | Full chain smoke-tested end-to-end |
 | 🔜 | Android app — command execution on device (Phase 2) |
-| 🔜 | Telegram reply sent back to Person A (Day 8) |
 | 🔜 | Security protocols — encryption, pairing, kill switch (Phase 3) |
 
 **Want to try it today?**
 
-You can run the relay server locally and watch Claude parse your Telegram messages in real time —
-no Android device needed yet. Two guides walk you through it step by step:
+You can run the relay server locally and watch the full chain work in real time —
+no Android device needed yet. Three guides walk you through it step by step:
 
 1. [`docs/smoke-test-phase1.md`](telegram-claw-relay/docs/smoke-test-phase1.md) — get the relay server running and receive your first Telegram message
 2. [`docs/smoke-test-phase1-day3-4.md`](telegram-claw-relay/docs/smoke-test-phase1-day3-4.md) — send *"Is he sleeping?"* and watch Claude decide which tool to call
+3. [`docs/smoke-test-phase1-day5-6.md`](telegram-claw-relay/docs/smoke-test-phase1-day5-6.md) — FCM push dispatched to a real Android device
 
 All you need: Java 21, Maven, a Telegram bot token (free, 2 minutes via BotFather), and an Anthropic API key.
 
