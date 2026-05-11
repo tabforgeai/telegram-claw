@@ -33,22 +33,27 @@ public class TelegramUpdateReceiver implements HttpHandler {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final IntentParser intentParser;
+    private final CommandDispatcher commandDispatcher;
 
     /**
-     * Constructs a TelegramUpdateReceiver wired to the given IntentParser.
+     * Constructs a TelegramUpdateReceiver wired to IntentParser and CommandDispatcher.
      *
-     * <p>Analogy: like assigning a specific translator to a receptionist — the receptionist
-     * (this class) handles the logistics of receiving visitors, while the translator
-     * (IntentParser) handles the language interpretation. The two are paired once at startup
-     * and work together for the lifetime of the server.</p>
+     * <p>Analogy: like assembling a processing line in a factory — the conveyor belt
+     * (this class) moves each item (Telegram message) through two stations: the translator
+     * (IntentParser) determines what to do, and the dispatcher (CommandDispatcher) sends
+     * the work order to the factory floor (Android device). The dispatcher may be null
+     * if Firebase is not configured, in which case commands are parsed but not sent.</p>
      *
-     * <p>Called by: {@link Main#main} once at startup, after IntentParser is created.</p>
+     * <p>Called by: {@link Main#main} once at startup.</p>
      *
-     * @param intentParser  the IntentParser to forward text messages to;
-     *                      responsible for calling Claude and returning a ClawCommand
+     * @param intentParser       the IntentParser that calls Claude to produce a ClawCommand
+     * @param commandDispatcher  the CommandDispatcher that sends commands via FCM;
+     *                           may be null if GOOGLE_APPLICATION_CREDENTIALS or
+     *                           FCM_DEVICE_TOKEN env vars are not set
      */
-    public TelegramUpdateReceiver(IntentParser intentParser) {
+    public TelegramUpdateReceiver(IntentParser intentParser, CommandDispatcher commandDispatcher) {
         this.intentParser = intentParser;
+        this.commandDispatcher = commandDispatcher;
     }
 
     /**
@@ -139,7 +144,18 @@ public class TelegramUpdateReceiver implements HttpHandler {
                 ClawCommand command = intentParser.parseIntent(text, message.getChat().getId());
                 log.info("[COMMAND] Tool: {} | Params: {} | ChatId: {}",
                         command.getToolName(), command.getParameters(), command.getSenderChatId());
-                // TODO Phase 1 Day 8: forward command to ResponseRouter + CommandDispatcher
+
+                if (commandDispatcher != null) {
+                    try {
+                        commandDispatcher.send(command);
+                    } catch (DispatchException e) {
+                        log.warn("[DISPATCH_FAIL] Could not deliver '{}' via FCM: {}",
+                                command.getToolName(), e.getMessage());
+                    }
+                } else {
+                    log.debug("[DISPATCH_SKIP] FCM not configured — command parsed but not sent.");
+                }
+                // TODO Phase 1 Day 8: forward command to ResponseRouter (Telegram reply)
             } catch (IntentParseException e) {
                 log.warn("[INTENT_FAIL] Could not parse intent from \"{}\": {}", text, e.getMessage());
             }

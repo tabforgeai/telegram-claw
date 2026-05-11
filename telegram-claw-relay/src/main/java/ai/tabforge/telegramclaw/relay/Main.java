@@ -20,12 +20,14 @@ import java.util.concurrent.Executors;
  *
  * <p>Required environment variables:
  * <ul>
- *   <li>TELEGRAM_BOT_TOKEN — the token from BotFather (format: 1234567890:ABCdef...)</li>
- *   <li>WEBHOOK_URL        — the public HTTPS URL where Telegram will POST updates
- *                            (e.g., https://xxxx.ngrok.io/webhook)</li>
- *   <li>ANTHROPIC_API_KEY  — Anthropic API key for Claude intent parsing</li>
- *   <li>PORT               — HTTP port to listen on (default: 8080)</li>
- *   <li>CLAUDE_MODEL       — model for intent parsing (default: claude-haiku-4-5-20251001)</li>
+ *   <li>TELEGRAM_BOT_TOKEN            — the token from BotFather (format: 1234567890:ABCdef...)</li>
+ *   <li>WEBHOOK_URL                   — the public HTTPS URL where Telegram will POST updates
+ *                                       (e.g., https://xxxx.ngrok.io/webhook)</li>
+ *   <li>ANTHROPIC_API_KEY             — Anthropic API key for Claude intent parsing</li>
+ *   <li>GOOGLE_APPLICATION_CREDENTIALS — absolute path to the Firebase service account JSON file</li>
+ *   <li>FCM_DEVICE_TOKEN              — FCM registration token of the target Android device</li>
+ *   <li>PORT                          — HTTP port to listen on (default: 8080)</li>
+ *   <li>CLAUDE_MODEL                  — model for intent parsing (default: claude-haiku-4-5-20251001)</li>
  * </ul>
  * </p>
  */
@@ -71,9 +73,24 @@ public class Main {
         AnthropicClient anthropicClient = AnthropicOkHttpClient.fromEnv();
         IntentParser intentParser = new IntentParser(anthropicClient);
 
+        CommandDispatcher commandDispatcher = null;
+        String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        String deviceToken = System.getenv("FCM_DEVICE_TOKEN");
+        if (credentialsPath != null && !credentialsPath.isBlank()
+                && deviceToken != null && !deviceToken.isBlank()) {
+            try {
+                commandDispatcher = new CommandDispatcher(credentialsPath, deviceToken);
+            } catch (IOException e) {
+                log.error("Failed to initialize Firebase Admin SDK: {}", e.getMessage());
+                log.error("Check that GOOGLE_APPLICATION_CREDENTIALS points to a valid service account JSON.");
+            }
+        } else {
+            log.warn("GOOGLE_APPLICATION_CREDENTIALS or FCM_DEVICE_TOKEN not set — FCM dispatch disabled.");
+        }
+
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser));
+        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher));
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
 
@@ -93,21 +110,27 @@ public class Main {
         String token       = System.getenv("TELEGRAM_BOT_TOKEN");
         String webhook     = System.getenv("WEBHOOK_URL");
         String anthropicKey = System.getenv("ANTHROPIC_API_KEY");
+        String credentials = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        String fcmToken    = System.getenv("FCM_DEVICE_TOKEN");
         String model       = System.getenv().getOrDefault("CLAUDE_MODEL", "claude-haiku-4-5-20251001");
         String port        = System.getenv().getOrDefault("PORT", "8080");
 
-        String tokenStatus    = (token       != null && !token.isBlank())       ? "SET" : "NOT SET (required)";
-        String webhookStatus  = (webhook     != null && !webhook.isBlank())     ? webhook : "NOT SET — run ngrok first";
-        String anthropicStatus = (anthropicKey != null && !anthropicKey.isBlank()) ? "SET" : "NOT SET (required)";
+        String tokenStatus       = (token        != null && !token.isBlank())        ? "SET" : "NOT SET (required)";
+        String webhookStatus     = (webhook      != null && !webhook.isBlank())      ? webhook : "NOT SET — run ngrok first";
+        String anthropicStatus   = (anthropicKey != null && !anthropicKey.isBlank()) ? "SET" : "NOT SET (required)";
+        String credentialsStatus = (credentials  != null && !credentials.isBlank())  ? credentials : "NOT SET — FCM disabled";
+        String fcmTokenStatus    = (fcmToken     != null && !fcmToken.isBlank())     ? "SET" : "NOT SET — FCM disabled";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 3");
+        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 5-6");
         log.info("---------------------------------------------------");
-        log.info("  PORT:                {}", port);
-        log.info("  TELEGRAM_BOT_TOKEN:  {}", tokenStatus);
-        log.info("  WEBHOOK_URL:         {}", webhookStatus);
-        log.info("  ANTHROPIC_API_KEY:   {}", anthropicStatus);
-        log.info("  CLAUDE_MODEL:        {}", model);
+        log.info("  PORT:                           {}", port);
+        log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);
+        log.info("  WEBHOOK_URL:                    {}", webhookStatus);
+        log.info("  ANTHROPIC_API_KEY:              {}", anthropicStatus);
+        log.info("  CLAUDE_MODEL:                   {}", model);
+        log.info("  GOOGLE_APPLICATION_CREDENTIALS: {}", credentialsStatus);
+        log.info("  FCM_DEVICE_TOKEN:               {}", fcmTokenStatus);
         log.info("---------------------------------------------------");
     }
 }

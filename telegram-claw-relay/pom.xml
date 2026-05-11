@@ -18,6 +18,7 @@
         <jackson.version>2.17.2</jackson.version>
         <logback.version>1.5.7</logback.version>
         <anthropic.version>2.28.0</anthropic.version>
+        <firebase.admin.version>9.3.0</firebase.admin.version>
     </properties>
 
     <dependencies>
@@ -40,6 +41,13 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
+        </dependency>
+
+        <!-- Firebase Admin SDK — sends FCM push notifications to the Android Claw app -->
+        <dependency>
+            <groupId>com.google.firebase</groupId>
+            <artifactId>firebase-admin</artifactId>
+            <version>${firebase.admin.version}</version>
         </dependency>
     </dependencies>
 
@@ -72,9 +80,22 @@
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>ai.tabforge.telegramclaw.relay.Main</mainClass>
                                 </transformer>
-                                <!-- Merges Logback service provider files correctly -->
+                                <!-- Merges gRPC / Firebase service provider files correctly -->
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
+                            <!-- Strip JAR signing metadata — signed JARs break when merged into a fat JAR -->
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                        <exclude>META-INF/versions/9/module-info.class</exclude>
+                                        <exclude>module-info.class</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
