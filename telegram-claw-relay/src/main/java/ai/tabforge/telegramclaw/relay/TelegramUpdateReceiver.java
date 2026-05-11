@@ -36,6 +36,7 @@ public class TelegramUpdateReceiver implements HttpHandler {
     private final CommandDispatcher commandDispatcher;
     private final AuthorizationService authorizationService;
     private final ResponseRouter responseRouter;
+    private final RateLimiter rateLimiter;
 
     /**
      * Constructs a TelegramUpdateReceiver wired to all processing pipeline components.
@@ -53,15 +54,18 @@ public class TelegramUpdateReceiver implements HttpHandler {
      * @param commandDispatcher    sends commands via FCM; may be null if Firebase is not configured
      * @param authorizationService checks whether a Telegram user ID is on the whitelist
      * @param responseRouter       sends Claude's reply back to Person A via Telegram sendMessage
+     * @param rateLimiter          tracks command frequency and auto-freezes anomalous senders
      */
     public TelegramUpdateReceiver(IntentParser intentParser,
                                   CommandDispatcher commandDispatcher,
                                   AuthorizationService authorizationService,
-                                  ResponseRouter responseRouter) {
+                                  ResponseRouter responseRouter,
+                                  RateLimiter rateLimiter) {
         this.intentParser = intentParser;
         this.commandDispatcher = commandDispatcher;
         this.authorizationService = authorizationService;
         this.responseRouter = responseRouter;
+        this.rateLimiter = rateLimiter;
     }
 
     /**
@@ -147,6 +151,23 @@ public class TelegramUpdateReceiver implements HttpHandler {
 
         if (!authorizationService.isAuthorized(sender.getId())) {
             log.warn("[DENIED] Unauthorized sender: {} (id={}) — message rejected.",
+                    sender.displayName(), sender.getId());
+            return;
+        }
+
+        RateLimiter.Result rateResult = rateLimiter.check(sender.getId(), sender.displayName());
+        if (rateResult == RateLimiter.Result.FROZEN) {
+            if (commandDispatcher != null) {
+                try {
+                    commandDispatcher.sendFreezeAlert(sender.displayName());
+                } catch (DispatchException e) {
+                    log.warn("[FREEZE_ALERT_FAIL] Could not notify device owner: {}", e.getMessage());
+                }
+            }
+            return;
+        }
+        if (rateResult == RateLimiter.Result.ALREADY_FROZEN) {
+            log.warn("[FREEZE] Sender {} (id={}) is frozen — message rejected.",
                     sender.displayName(), sender.getId());
             return;
         }

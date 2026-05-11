@@ -112,4 +112,39 @@ public class CommandDispatcher {
                     "FCM dispatch failed for tool '" + command.getToolName() + "': " + e.getMessage(), e);
         }
     }
+
+    /**
+     * Sends a system alert to the device owner notifying them that a sender has been auto-frozen.
+     *
+     * <p>Analogy: like a bank's fraud alert SMS — the card was blocked automatically,
+     * and now the bank texts the account holder to let them know. This method is that SMS:
+     * it tells the device owner that someone was sending an unusual number of commands,
+     * so access was suspended and their attention is needed to review and lift the freeze.</p>
+     *
+     * <p>The FCM message uses the special tool name {@code __system_freeze} so the Android app
+     * (Phase 2) can distinguish system alerts from regular commands and handle them appropriately
+     * (e.g., show a fullscreen alert with a "Lift freeze" button).</p>
+     *
+     * <p>Called by: {@link TelegramUpdateReceiver#handleMessage} when
+     * {@link RateLimiter#check} returns {@link RateLimiter.Result#FROZEN}.</p>
+     *
+     * @param frozenSenderName  display name of the sender who was frozen — shown in the device alert
+     * @param commandCount      number of commands sent in the 60-second window that triggered the freeze
+     * @throws DispatchException  if the FCM push cannot be delivered
+     */
+    public void sendFreezeAlert(String frozenSenderName) throws DispatchException {
+        try {
+            Message message = Message.builder()
+                    .putData("tool", "__system_freeze")
+                    .putData("frozen_sender", frozenSenderName)
+                    .setToken(deviceToken)
+                    .build();
+
+            String messageId = FirebaseMessaging.getInstance().send(message);
+            log.info("[FCM] Freeze alert dispatched to device owner. Message ID: {}", messageId);
+
+        } catch (Exception e) {
+            throw new DispatchException("Failed to send freeze alert: " + e.getMessage(), e);
+        }
+    }
 }
