@@ -4,6 +4,8 @@ import android.content.Context;
 import android.util.Log;
 
 import ai.tabforge.telegramclaw.tool.AudioManagerTool;
+import ai.tabforge.telegramclaw.tool.DeviceContextTool;
+import ai.tabforge.telegramclaw.tool.NotificationSenderTool;
 
 /**
  * Routes an incoming ClawCommand to the appropriate tool handler after checking
@@ -127,8 +129,14 @@ public class CommandExecutor {
     }
 
     private void executeGetDeviceContext(String paramsJson, long chatId) {
-        Log.i(TAG, "[STUB] get_device_context — Day 16.");
-        // TODO Day 16: read battery, screen state, motion sensors, ambient light
+        try {
+            String result = new DeviceContextTool(context).execute();
+            Log.i(TAG, "[get_device_context] " + result);
+            auditLogger.log(AuditLogger.Status.SUCCESS, "get_device_context", chatId, result);
+        } catch (Exception e) {
+            Log.e(TAG, "[get_device_context] Execution failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "get_device_context", chatId, e.getMessage());
+        }
     }
 
     private void executeMediaControl(String paramsJson, long chatId) {
@@ -137,8 +145,14 @@ public class CommandExecutor {
     }
 
     private void executeNotificationSender(String paramsJson, long chatId) {
-        Log.i(TAG, "[STUB] notification_sender — Day 16.");
-        // TODO Day 16: toast, notification, or fullscreen alert based on params
+        try {
+            String result = new NotificationSenderTool(context).execute(paramsJson);
+            Log.i(TAG, "[notification_sender] " + result);
+            auditLogger.log(AuditLogger.Status.SUCCESS, "notification_sender", chatId, result);
+        } catch (Exception e) {
+            Log.e(TAG, "[notification_sender] Execution failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "notification_sender", chatId, e.getMessage());
+        }
     }
 
     private void executeLocationFetcher(String paramsJson, long chatId) {

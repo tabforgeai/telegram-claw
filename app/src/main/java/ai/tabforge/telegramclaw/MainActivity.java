@@ -1,6 +1,8 @@
 package ai.tabforge.telegramclaw;
 
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -8,6 +10,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.messaging.FirebaseMessaging;
 
@@ -45,9 +49,26 @@ public class MainActivity extends AppCompatActivity {
         permissionManifest = new PermissionManifest(this);
         auditLogger = new AuditLogger(this);
 
+        requestNotificationPermission();
         setupTokenSection();
         setupPermissionToggles();
         setupAuditLogSection();
+    }
+
+    /**
+     * Requests POST_NOTIFICATIONS runtime permission on Android 13+.
+     *
+     * <p>Required for notification_sender tool to post notifications. On Android 12 and below,
+     * this permission is automatically granted at install time.</p>
+     */
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS}, 1);
+            }
+        }
     }
 
     /**
