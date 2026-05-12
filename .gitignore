@@ -16,9 +16,14 @@ local.properties
 
 # Maven build output
 telegram-claw-relay/target/
+telegram-claw-relay/dependency-reduced-pom.xml
 
 # Private planning document
 TELEGRAM_CLAW_PLAN.md
 
-# Android app module — committed separately in Phase 2
-app/
+# Android app build output
+app/build/
+app/.cxx/
+
+# Firebase config — contains API keys, never commit
+app/google-services.json
