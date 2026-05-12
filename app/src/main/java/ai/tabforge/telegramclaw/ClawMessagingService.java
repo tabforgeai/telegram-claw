@@ -69,7 +69,16 @@ public class ClawMessagingService extends FirebaseMessagingService {
                 + " | params=" + params
                 + " | chatId=" + chatId);
 
-        // TODO Day 13: pass to CommandExecutor for permission check and execution
+        long chatIdLong = 0L;
+        if (chatId != null) {
+            try {
+                chatIdLong = Long.parseLong(chatId);
+            } catch (NumberFormatException e) {
+                Log.w(TAG, "[FCM] Invalid chatId value: " + chatId);
+            }
+        }
+
+        new CommandExecutor(this).execute(tool, params, chatIdLong);
     }
 
     /**
