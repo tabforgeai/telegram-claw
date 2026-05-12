@@ -3,6 +3,8 @@ package ai.tabforge.telegramclaw;
 import android.content.Context;
 import android.util.Log;
 
+import ai.tabforge.telegramclaw.tool.AudioManagerTool;
+
 /**
  * Routes an incoming ClawCommand to the appropriate tool handler after checking
  * that the device owner has explicitly enabled that tool in {@link PermissionManifest}.
@@ -114,8 +116,14 @@ public class CommandExecutor {
     // -------------------------------------------------------------------------
 
     private void executeAudioManager(String paramsJson, long chatId) {
-        Log.i(TAG, "[STUB] audio_manager — Day 15.");
-        // TODO Day 15: parse paramsJson, call AudioManager, send result via ResponseRouter
+        try {
+            String result = new AudioManagerTool(context).execute(paramsJson);
+            Log.i(TAG, "[audio_manager] " + result);
+            auditLogger.log(AuditLogger.Status.SUCCESS, "audio_manager", chatId, result);
+        } catch (Exception e) {
+            Log.e(TAG, "[audio_manager] Execution failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "audio_manager", chatId, e.getMessage());
+        }
     }
 
     private void executeGetDeviceContext(String paramsJson, long chatId) {
