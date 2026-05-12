@@ -34,23 +34,25 @@ public class CommandExecutor {
 
     private final Context context;
     private final PermissionManifest permissionManifest;
+    private final AuditLogger auditLogger;
 
     /**
-     * Constructs a CommandExecutor wired to the app's PermissionManifest.
+     * Constructs a CommandExecutor wired to the app's PermissionManifest and AuditLogger.
      *
      * <p>Analogy: like a switchboard operator sitting down at their console — they need
-     * both the access list ({@link PermissionManifest}) and the physical context (Android
-     * APIs) to do their job. Both are acquired here once so {@link #execute} can focus
-     * purely on routing.</p>
+     * the access list ({@link PermissionManifest}), the logbook ({@link AuditLogger}),
+     * and the physical context (Android APIs) to do their job. All three are acquired here
+     * once so {@link #execute} can focus purely on routing.</p>
      *
-     * <p>Called by: {@link ClawMessagingService#onMessageReceived} on each incoming message.</p>
+     * <p>Called by: {@link ClawMessagingService} once in {@code onCreate()}.</p>
      *
-     * @param context  service or application context; used for PermissionManifest and,
-     *                 from Day 15, for accessing Android system services during tool execution
+     * @param context  service or application context; used for PermissionManifest, AuditLogger,
+     *                 and from Day 15, for accessing Android system services during tool execution
      */
     public CommandExecutor(Context context) {
         this.context = context;
         this.permissionManifest = new PermissionManifest(context);
+        this.auditLogger = new AuditLogger(context);
     }
 
     /**
@@ -77,7 +79,7 @@ public class CommandExecutor {
 
         if (!permissionManifest.isEnabled(tool)) {
             Log.w(TAG, "[DENIED] Tool '" + tool + "' is not enabled in PermissionManifest — command dropped.");
-            // TODO Day 14: AuditLogger.log(Status.DENIED, tool, chatId)
+            auditLogger.log(AuditLogger.Status.DENIED, tool, chatId, "Tool not enabled in PermissionManifest");
             return;
         }
 
@@ -160,7 +162,9 @@ public class CommandExecutor {
         switch (tool) {
             case "__system_freeze":
                 Log.w(TAG, "[SYSTEM] Freeze alert received from relay server. Params: " + paramsJson);
-                // TODO Day 14: AuditLogger + show fullscreen alert to device owner
+                auditLogger.log(AuditLogger.Status.SUCCESS, "__system_freeze", 0L,
+                        "Sender auto-frozen by relay rate limiter");
+                // TODO Day 16: show fullscreen alert to device owner
                 break;
             default:
                 Log.w(TAG, "[SYSTEM] Unknown system message: '" + tool + "' — ignoring.");

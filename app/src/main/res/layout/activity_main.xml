@@ -10,20 +10,22 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="FCM Device Token"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:paddingBottom="8dp" />
+        <!-- ── FCM Device Token ─────────────────────────────────── -->
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Copy the token below and set it as FCM_DEVICE_TOKEN env var on the relay server."
-            android:textSize="14sp"
-            android:paddingBottom="16dp" />
+            android:text="FCM Device Token"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Copy and set as FCM_DEVICE_TOKEN on the relay server."
+            android:textSize="13sp"
+            android:paddingBottom="8dp" />
 
         <TextView
             android:id="@+id/token_text"
@@ -32,7 +34,102 @@
             android:text="Fetching token..."
             android:textIsSelectable="true"
             android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:background="#F5F5F5"
+            android:padding="12dp" />
+
+        <!-- ── Permissions ──────────────────────────────────────── -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Permissions"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="24dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="All tools are off by default. Enable only what you need."
             android:textSize="13sp"
+            android:paddingBottom="12dp" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_audio_manager"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="audio_manager — set volume, force alert ping"
+            android:paddingBottom="8dp" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_get_device_context"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="get_device_context — battery, screen, motion, light"
+            android:paddingBottom="8dp" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_media_control"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="media_control — play, pause, skip"
+            android:paddingBottom="8dp" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_notification_sender"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="notification_sender — toast, notification, alert"
+            android:paddingBottom="8dp" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_location_fetcher"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="location_fetcher — GPS coordinates (always confirms)"
+            android:paddingBottom="8dp" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/switch_camera_capture"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="camera_capture — take a photo (always confirms)"
+            android:paddingBottom="8dp" />
+
+        <!-- ── Audit Log ─────────────────────────────────────────── -->
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="24dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Audit Log"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btn_refresh_log"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Refresh" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/audit_log_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No entries yet."
+            android:fontFamily="monospace"
+            android:textSize="11sp"
             android:background="#F5F5F5"
             android:padding="12dp" />
 

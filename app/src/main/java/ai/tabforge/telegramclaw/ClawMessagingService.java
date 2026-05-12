@@ -36,6 +36,14 @@ public class ClawMessagingService extends FirebaseMessagingService {
 
     private static final String TAG = "ClawMessagingService";
 
+    private CommandExecutor commandExecutor;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        commandExecutor = new CommandExecutor(this);
+    }
+
     /**
      * Called by the Firebase SDK when a data message arrives from the relay server.
      *
@@ -78,7 +86,7 @@ public class ClawMessagingService extends FirebaseMessagingService {
             }
         }
 
-        new CommandExecutor(this).execute(tool, params, chatIdLong);
+        commandExecutor.execute(tool, params, chatIdLong);
     }
 
     /**
