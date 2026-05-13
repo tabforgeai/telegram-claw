@@ -66,11 +66,37 @@
             android:textSize="12sp"
             android:paddingBottom="8dp" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Relay Callback URL"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:paddingTop="12dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Public URL of the relay server (e.g. ngrok). Enables Claude to interpret results."
+            android:textSize="13sp"
+            android:paddingBottom="8dp" />
+
+        <EditText
+            android:id="@+id/edit_relay_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="https://abc123.ngrok.io"
+            android:inputType="textUri"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:paddingBottom="8dp" />
+
         <Button
             android:id="@+id/btn_save_bot_token"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Save Token" />
+            android:text="Save Settings" />
 
         <!-- ── Permissions ──────────────────────────────────────── -->
 

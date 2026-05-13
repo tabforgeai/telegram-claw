@@ -105,15 +105,17 @@ public class MainActivity extends AppCompatActivity {
      * executions will use it to reply back to Person A via Telegram.</p>
      */
     private void setupBotTokenSection() {
-        EditText editToken = findViewById(R.id.edit_bot_token);
-        Button saveBtn = findViewById(R.id.btn_save_bot_token);
+        EditText editToken    = findViewById(R.id.edit_bot_token);
+        EditText editRelayUrl = findViewById(R.id.edit_relay_url);
+        Button   saveBtn      = findViewById(R.id.btn_save_bot_token);
 
         editToken.setText(TelegramReplyClient.loadBotToken(this));
+        editRelayUrl.setText(TelegramReplyClient.loadRelayUrl(this));
 
         saveBtn.setOnClickListener(v -> {
-            String token = editToken.getText().toString().trim();
-            TelegramReplyClient.saveBotToken(this, token);
-            Toast.makeText(this, "Bot token saved.", Toast.LENGTH_SHORT).show();
+            TelegramReplyClient.saveBotToken(this, editToken.getText().toString().trim());
+            TelegramReplyClient.saveRelayUrl(this, editRelayUrl.getText().toString().trim());
+            Toast.makeText(this, "Settings saved.", Toast.LENGTH_SHORT).show();
         });
     }
 

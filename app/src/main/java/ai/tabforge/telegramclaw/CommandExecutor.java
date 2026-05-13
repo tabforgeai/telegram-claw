@@ -124,7 +124,7 @@ public class CommandExecutor {
             String result = new AudioManagerTool(context).execute(paramsJson);
             Log.i(TAG, "[audio_manager] " + result);
             auditLogger.log(AuditLogger.Status.SUCCESS, "audio_manager", chatId, result);
-            telegramReplyClient.sendReply(chatId, result);
+            telegramReplyClient.sendCallback(chatId, "audio_manager", result);
         } catch (Exception e) {
             Log.e(TAG, "[audio_manager] Execution failed: " + e.getMessage());
             auditLogger.log(AuditLogger.Status.ERROR, "audio_manager", chatId, e.getMessage());
@@ -136,7 +136,7 @@ public class CommandExecutor {
             String result = new DeviceContextTool(context).execute();
             Log.i(TAG, "[get_device_context] " + result);
             auditLogger.log(AuditLogger.Status.SUCCESS, "get_device_context", chatId, result);
-            telegramReplyClient.sendReply(chatId, result);
+            telegramReplyClient.sendCallback(chatId, "get_device_context", result);
         } catch (Exception e) {
             Log.e(TAG, "[get_device_context] Execution failed: " + e.getMessage());
             auditLogger.log(AuditLogger.Status.ERROR, "get_device_context", chatId, e.getMessage());
@@ -153,7 +153,7 @@ public class CommandExecutor {
             String result = new NotificationSenderTool(context).execute(paramsJson);
             Log.i(TAG, "[notification_sender] " + result);
             auditLogger.log(AuditLogger.Status.SUCCESS, "notification_sender", chatId, result);
-            telegramReplyClient.sendReply(chatId, result);
+            telegramReplyClient.sendCallback(chatId, "notification_sender", result);
         } catch (Exception e) {
             Log.e(TAG, "[notification_sender] Execution failed: " + e.getMessage());
             auditLogger.log(AuditLogger.Status.ERROR, "notification_sender", chatId, e.getMessage());

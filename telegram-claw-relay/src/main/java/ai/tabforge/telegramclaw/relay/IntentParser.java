@@ -148,6 +148,54 @@ public class IntentParser {
     }
 
     /**
+     * Interprets a raw tool result in natural language by asking Claude.
+     *
+     * <p>Analogy: like a lab technician translating a blood test printout into plain English
+     * for a patient — the raw numbers (device sensor readings) are accurate but unreadable;
+     * Claude reads the printout and says "Your iron is a little low, but everything else looks fine."
+     * This is the second Claude call in the request-response loop: the first call (in
+     * {@link #parseIntent}) picks the tool; this call interprets the device's answer.</p>
+     *
+     * <p>Called by: {@link CallbackReceiver#handle} for query tools after Android reports back.
+     * Uses a plain text call (no tool manifest) so Claude answers conversationally.</p>
+     *
+     * @param toolName   the tool that produced the result, e.g. {@code "get_device_context"}
+     * @param rawResult  the raw result string from the Android device
+     * @return  Claude's 1-2 sentence natural language interpretation, or the raw result if the call fails
+     */
+    public String interpretResult(String toolName, String rawResult) {
+        try {
+            String userMessage =
+                    "The remote Android device executed the \"" + toolName + "\" tool and returned:\n\n" +
+                    rawResult + "\n\n" +
+                    "Write a brief (1-2 sentence) natural language interpretation that tells " +
+                    "the person who asked what this result means. Be direct and conversational.";
+
+            MessageCreateParams params = MessageCreateParams.builder()
+                    .model(model)
+                    .maxTokens(256L)
+                    .system(SYSTEM_PROMPT)
+                    .addUserMessage(userMessage)
+                    .build();
+
+            Message response = client.messages().create(params);
+
+            for (ContentBlock block : response.content()) {
+                if (block.text().isPresent()) {
+                    String interpretation = block.text().get().text();
+                    log.info("[INTERPRET] {} → {}", toolName, interpretation);
+                    return interpretation;
+                }
+            }
+            return "Device result: " + rawResult;
+
+        } catch (Exception e) {
+            log.warn("[INTERPRET_FAIL] Could not interpret result for {}: {}", toolName, e.getMessage());
+            return "Device result: " + rawResult;
+        }
+    }
+
+    /**
      * Builds the fixed list of tools that every device exposes.
      *
      * <p>Analogy: like printing the menu at a restaurant — the menu (tool manifest) is

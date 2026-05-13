@@ -97,6 +97,7 @@ public class Main {
         RateLimiter rateLimiter = new RateLimiter();
 
         server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService, responseRouter, rateLimiter));
+        server.createContext("/callback", new CallbackReceiver(intentParser, responseRouter));
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
 
