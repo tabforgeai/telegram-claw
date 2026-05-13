@@ -6,7 +6,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SwitchCompat;
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         requestNotificationPermission();
         setupTokenSection();
+        setupBotTokenSection();
         setupPermissionToggles();
         setupAuditLogSection();
     }
@@ -92,6 +95,26 @@ public class MainActivity extends AppCompatActivity {
                     Log.d(TAG, "FCM Token: " + token);
                     tokenText.setText(token);
                 });
+    }
+
+    /**
+     * Wires the Bot Token EditText and Save button to {@link TelegramReplyClient}.
+     *
+     * <p>Pre-fills the field with any previously saved token so the device owner can
+     * see and update it. Tapping Save persists the token immediately; subsequent tool
+     * executions will use it to reply back to Person A via Telegram.</p>
+     */
+    private void setupBotTokenSection() {
+        EditText editToken = findViewById(R.id.edit_bot_token);
+        Button saveBtn = findViewById(R.id.btn_save_bot_token);
+
+        editToken.setText(TelegramReplyClient.loadBotToken(this));
+
+        saveBtn.setOnClickListener(v -> {
+            String token = editToken.getText().toString().trim();
+            TelegramReplyClient.saveBotToken(this, token);
+            Toast.makeText(this, "Bot token saved.", Toast.LENGTH_SHORT).show();
+        });
     }
 
     /**

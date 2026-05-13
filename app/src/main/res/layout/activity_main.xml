@@ -38,6 +38,40 @@
             android:background="#F5F5F5"
             android:padding="12dp" />
 
+        <!-- ── Bot Token ────────────────────────────────────────── -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bot Token"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="24dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Token from @BotFather. Lets the app reply back to Telegram."
+            android:textSize="13sp"
+            android:paddingBottom="8dp" />
+
+        <EditText
+            android:id="@+id/edit_bot_token"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="123456789:ABCdef..."
+            android:inputType="textVisiblePassword"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_save_bot_token"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save Token" />
+
         <!-- ── Permissions ──────────────────────────────────────── -->
 
         <TextView
