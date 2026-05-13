@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
         requestNotificationPermission();
         requestLocationPermission();
+        requestCameraPermission();
         setupTokenSection();
         setupBotTokenSection();
         setupPermissionToggles();
@@ -65,6 +66,14 @@ public class MainActivity extends AppCompatActivity {
      * <p>Required for notification_sender tool to post notifications. On Android 12 and below,
      * this permission is automatically granted at install time.</p>
      */
+    private void requestCameraPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.CAMERA}, 3);
+        }
+    }
+
     private void requestLocationPermission() {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {

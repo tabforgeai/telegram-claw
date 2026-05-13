@@ -450,23 +450,22 @@ public class IntentParser {
         return Tool.builder()
                 .name("camera_capture")
                 .description(
-                        "Takes a photo with the device camera and sends it back to the sender via Telegram. " +
-                        "FRONT uses the selfie camera. BACK uses the rear camera. " +
-                        "IMPORTANT: this always requires explicit confirmation from the device owner — " +
-                        "it cannot be pre-approved. Use when the sender wants to see what is in front of the camera.")
+                        "Takes a photo with the device camera and sends it to the sender via Telegram. " +
+                        "Defaults: back camera, no flash. Override with camera=FRONT/BACK and flash=true/false. " +
+                        "Use when the sender wants to see what is around the device.")
                 .inputSchema(Tool.InputSchema.builder()
                         .properties(Tool.InputSchema.Properties.builder()
                                 .putAdditionalProperty("camera", JsonValue.from(Map.of(
                                         "type", "string",
-                                        "description", "Which camera to use",
+                                        "description", "FRONT or BACK (default: BACK)",
                                         "enum", List.of("FRONT", "BACK")
                                 )))
                                 .putAdditionalProperty("flash", JsonValue.from(Map.of(
                                         "type", "boolean",
-                                        "description", "Whether to use the flash"
+                                        "description", "Whether to use flash (default: false)"
                                 )))
                                 .build())
-                        .required(List.of("camera", "flash"))
+                        .required(List.of())
                         .build())
                 .build();
     }

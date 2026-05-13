@@ -5,6 +5,9 @@ import android.util.Log;
 
 import org.json.JSONObject;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -161,6 +164,70 @@ public class TelegramReplyClient {
         } catch (Exception e) {
             Log.e(TAG, "Failed to post callback to relay: " + e.getMessage() + " — falling back.");
             sendReply(chatId, result);
+        }
+    }
+
+    /**
+     * Sends a photo file to Person A via the Telegram Bot API {@code sendPhoto} endpoint.
+     *
+     * <p>Analogy: like sending a polaroid through the mail — the photo is attached as a
+     * multipart/form-data body, the same format a browser would use to upload a file.
+     * Telegram receives it and displays it as an inline image in the chat.</p>
+     *
+     * <p>Must be called on a background thread. The photo file is deleted by the caller
+     * ({@link CommandExecutor}) after this method returns.</p>
+     *
+     * @param chatId  Telegram chat ID of Person A
+     * @param photo   the JPEG file to send; must exist and be non-null
+     */
+    public void sendPhoto(long chatId, File photo) {
+        String token = loadBotToken(context);
+        if (token.isBlank() || photo == null || !photo.exists()) {
+            Log.w(TAG, "sendPhoto skipped — token blank or file missing.");
+            return;
+        }
+
+        String boundary = "ClawBoundary" + System.currentTimeMillis();
+
+        try {
+            HttpURLConnection conn = (HttpURLConnection)
+                    new URL("https://api.telegram.org/bot" + token + "/sendPhoto").openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(TIMEOUT);
+            conn.setReadTimeout(TIMEOUT * 3);
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+            try (DataOutputStream out = new DataOutputStream(conn.getOutputStream())) {
+                // chat_id field
+                out.writeBytes("--" + boundary + "\r\n");
+                out.writeBytes("Content-Disposition: form-data; name=\"chat_id\"\r\n\r\n");
+                out.writeBytes(chatId + "\r\n");
+
+                // photo field
+                out.writeBytes("--" + boundary + "\r\n");
+                out.writeBytes("Content-Disposition: form-data; name=\"photo\"; filename=\"capture.jpg\"\r\n");
+                out.writeBytes("Content-Type: image/jpeg\r\n\r\n");
+                try (FileInputStream fis = new FileInputStream(photo)) {
+                    byte[] buf = new byte[8192];
+                    int n;
+                    while ((n = fis.read(buf)) != -1) {
+                        out.write(buf, 0, n);
+                    }
+                }
+                out.writeBytes("\r\n--" + boundary + "--\r\n");
+            }
+
+            int code = conn.getResponseCode();
+            if (code == HttpURLConnection.HTTP_OK) {
+                Log.i(TAG, "[sendPhoto] Sent to chatId=" + chatId + " (" + photo.length() + " bytes)");
+            } else {
+                Log.w(TAG, "[sendPhoto] Telegram returned HTTP " + code);
+            }
+            conn.disconnect();
+
+        } catch (Exception e) {
+            Log.e(TAG, "[sendPhoto] Failed: " + e.getMessage());
         }
     }
 

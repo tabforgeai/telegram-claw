@@ -7,7 +7,10 @@ import android.util.Log;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import java.io.File;
+
 import ai.tabforge.telegramclaw.tool.AudioManagerTool;
+import ai.tabforge.telegramclaw.tool.CameraCaptureTool;
 import ai.tabforge.telegramclaw.tool.DeviceContextTool;
 import ai.tabforge.telegramclaw.tool.LocationFetcherTool;
 import ai.tabforge.telegramclaw.tool.MediaControlTool;
@@ -225,8 +228,29 @@ public class CommandExecutor {
     }
 
     private void executeCameraCapture(String paramsJson, long chatId) {
-        Log.i(TAG, "[STUB] camera_capture — Day 16.");
-        // TODO Day 16: show confirmation dialog (Protocol 1), then CameraX capture + Telegram upload
+        boolean approved = requestConfirmation("camera_capture", chatId);
+        if (!approved) {
+            String reason = "Access denied by device owner.";
+            auditLogger.log(AuditLogger.Status.DENIED, "camera_capture", chatId, reason);
+            telegramReplyClient.sendCallback(chatId, "camera_capture", reason);
+            return;
+        }
+        try {
+            File photo = new CameraCaptureTool(context).execute(paramsJson, chatId);
+            if (photo == null) {
+                String err = "Photo capture failed — camera may be unavailable or in use.";
+                auditLogger.log(AuditLogger.Status.ERROR, "camera_capture", chatId, err);
+                telegramReplyClient.sendReply(chatId, err);
+                return;
+            }
+            auditLogger.log(AuditLogger.Status.SUCCESS, "camera_capture", chatId,
+                    "Photo captured: " + photo.getName());
+            telegramReplyClient.sendPhoto(chatId, photo);
+            photo.delete();
+        } catch (Exception e) {
+            Log.e(TAG, "[camera_capture] Failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "camera_capture", chatId, e.getMessage());
+        }
     }
 
     // -------------------------------------------------------------------------
