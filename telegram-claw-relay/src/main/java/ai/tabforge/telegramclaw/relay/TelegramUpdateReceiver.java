@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 /**
  * Receives every HTTP POST that the Telegram Bot API sends to our /webhook endpoint,
@@ -31,6 +32,13 @@ public class TelegramUpdateReceiver implements HttpHandler {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramUpdateReceiver.class);
     private static final ObjectMapper mapper = new ObjectMapper();
+
+    /**
+     * Tools whose answers come via the /callback loop — the immediate Claude acknowledgment
+     * is suppressed for these so Person A receives exactly one message: the interpreted result.
+     * Action tools (audio_manager, notification_sender) keep the immediate reply.
+     */
+    private static final Set<String> QUERY_TOOLS = Set.of("get_device_context", "location_fetcher");
 
     private final IntentParser intentParser;
     private final CommandDispatcher commandDispatcher;
@@ -191,8 +199,10 @@ public class TelegramUpdateReceiver implements HttpHandler {
                     log.debug("[DISPATCH_SKIP] FCM not configured — command parsed but not sent.");
                 }
 
-                responseRouter.sendReply(command.getSenderChatId(),
-                        command.getNaturalLanguageReply(), command.getToolName());
+                if (!QUERY_TOOLS.contains(command.getToolName())) {
+                    responseRouter.sendReply(command.getSenderChatId(),
+                            command.getNaturalLanguageReply(), command.getToolName());
+                }
             } catch (IntentParseException e) {
                 log.warn("[INTENT_FAIL] Could not parse intent from \"{}\": {}", text, e.getMessage());
             }
