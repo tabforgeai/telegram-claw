@@ -103,7 +103,7 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 
 ## Current Status
 
-> `v0.1.0` — Relay server complete. Android app in development (Phase 2).
+> `v0.2.0-dev` — Full end-to-end loop working on a real Android device.
 
 **What works right now:**
 
@@ -113,23 +113,32 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 | ✅ | Claude AI parses natural language into structured tool calls |
 | ✅ | All 6 tool definitions built and sent to Claude on every message |
 | ✅ | FCM push — command dispatched to Android device via Firebase |
-| ✅ | Telegram reply sent back to Person A in natural language |
 | ✅ | Authorization — Telegram user ID whitelist (only approved senders accepted) |
 | ✅ | Rate limiting — auto-freeze on command flood (Protocol 8) |
-| ✅ | Full chain smoke-tested end-to-end |
-| 🔜 | Android app — command execution on device (Phase 2) |
+| ✅ | Android app receives FCM commands via persistent ForegroundService |
+| ✅ | Permission Manifest — all tools off by default, device owner enables each one (Protocol 3) |
+| ✅ | Audit Log — every executed and denied command logged on-device (Protocol 5) |
+| ✅ | `get_device_context` — reads battery, screen, sound profile, ambient light, motion |
+| ✅ | `audio_manager` — sets volume, overrides silent mode with force ping |
+| ✅ | `notification_sender` — toast, status bar notification, heads-up alert |
+| ✅ | Full callback loop: Android POSTs result → relay → Claude interprets → natural language answer |
+| ✅ | Language detection — Claude answers in the same language the question was asked |
+| ✅ | Offline timeout — 30-second grace period, then "device did not respond" notice |
+| 🔜 | `media_control`, `location_fetcher`, `camera_capture` tools (Phase 3) |
 | 🔜 | Security protocols — encryption, pairing, kill switch (Phase 3) |
 
 **Want to try it today?**
 
-You can run the relay server locally and watch the full chain work in real time —
-no Android device needed yet. Three guides walk you through it step by step:
+Four guides walk you through the full stack, step by step.
+The first three need only a computer — no Android device required.
+The fourth runs the complete loop on a real phone.
 
 1. [`docs/smoke-test-phase1.md`](telegram-claw-relay/docs/smoke-test-phase1.md) — get the relay server running and receive your first Telegram message
 2. [`docs/smoke-test-phase1-day3-4.md`](telegram-claw-relay/docs/smoke-test-phase1-day3-4.md) — send *"Is he sleeping?"* and watch Claude decide which tool to call
 3. [`docs/smoke-test-phase1-day5-6.md`](telegram-claw-relay/docs/smoke-test-phase1-day5-6.md) — FCM push dispatched to a real Android device
+4. [`docs/smoke-test-phase2-day17-19.md`](telegram-claw-relay/docs/smoke-test-phase2-day17-19.md) — **full loop on a real Android device:** question → Claude → FCM → Android sensors → callback → Claude interprets → natural language answer in your language *(requires an Android device)*
 
-All you need: Java 21, Maven, a Telegram bot token (free, 2 minutes via BotFather), and an Anthropic API key.
+All you need for guides 1–3: Java 21, Maven, a Telegram bot token (free, 2 minutes via BotFather), and an Anthropic API key.
 
 > **Note:** During development, the relay server uses the Anthropic API (Claude Haiku) for intent parsing.
 > The planned default for the stable release is the **Groq API** — which has a free tier of 14,400 requests/day,
