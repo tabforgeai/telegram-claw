@@ -5,6 +5,8 @@ import android.util.Log;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import org.json.JSONObject;
+
 import java.util.Map;
 
 /**
@@ -64,9 +66,28 @@ public class ClawMessagingService extends FirebaseMessagingService {
     public void onMessageReceived(RemoteMessage message) {
         Map<String, String> data = message.getData();
 
-        String tool   = data.get("tool");
-        String params = data.get("params");
-        String chatId = data.get("chatId");
+        String tool, params, chatId;
+
+        if (data.containsKey("encKey")) {
+            // Encrypted command — decrypt before processing
+            try {
+                String decrypted = KeyManager.decrypt(
+                        data.get("encKey"), data.get("payload"), data.get("iv"));
+                JSONObject json = new JSONObject(decrypted);
+                tool   = json.getString("tool");
+                params = json.optString("params", "{}");
+                chatId = json.optString("chatId", "0");
+                Log.i(TAG, "[FCM] Encrypted command decrypted | tool=" + tool);
+            } catch (Exception e) {
+                Log.e(TAG, "[FCM] Decryption failed — dropping message: " + e.getMessage());
+                return;
+            }
+        } else {
+            // Plaintext command (backwards-compatible / encryption not configured)
+            tool   = data.get("tool");
+            params = data.get("params");
+            chatId = data.get("chatId");
+        }
 
         if (tool == null || tool.isBlank()) {
             Log.w(TAG, "[FCM] Received message with no tool field — ignoring.");

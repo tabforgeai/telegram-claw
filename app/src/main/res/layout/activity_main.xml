@@ -38,6 +38,35 @@
             android:background="#F5F5F5"
             android:padding="12dp" />
 
+        <!-- ── Device Public Key ───────────────────────────────── -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Device Public Key"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="24dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Set as DEVICE_PUBLIC_KEY on the relay server to enable E2E encryption."
+            android:textSize="13sp"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/public_key_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Generating key..."
+            android:textIsSelectable="true"
+            android:fontFamily="monospace"
+            android:textSize="10sp"
+            android:background="#F5F5F5"
+            android:padding="12dp" />
+
         <!-- ── Bot Token ────────────────────────────────────────── -->
 
         <TextView

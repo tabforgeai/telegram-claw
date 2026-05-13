@@ -76,13 +76,26 @@ public class Main {
         AnthropicClient anthropicClient = AnthropicOkHttpClient.fromEnv();
         IntentParser intentParser = new IntentParser(anthropicClient);
 
+        CryptoService cryptoService = null;
+        String publicKeyEnv = System.getenv("DEVICE_PUBLIC_KEY");
+        if (publicKeyEnv != null && !publicKeyEnv.isBlank()) {
+            try {
+                cryptoService = new CryptoService(publicKeyEnv);
+            } catch (Exception e) {
+                log.error("Failed to initialize CryptoService: {}", e.getMessage());
+                log.error("Check that DEVICE_PUBLIC_KEY contains the Base64 RSA public key from the Claw app.");
+            }
+        } else {
+            log.warn("DEVICE_PUBLIC_KEY not set — FCM sent in plaintext (E2E encryption disabled).");
+        }
+
         CommandDispatcher commandDispatcher = null;
         String credentialsPath = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
         String deviceToken = System.getenv("FCM_DEVICE_TOKEN");
         if (credentialsPath != null && !credentialsPath.isBlank()
                 && deviceToken != null && !deviceToken.isBlank()) {
             try {
-                commandDispatcher = new CommandDispatcher(credentialsPath, deviceToken);
+                commandDispatcher = new CommandDispatcher(credentialsPath, deviceToken, cryptoService);
             } catch (IOException e) {
                 log.error("Failed to initialize Firebase Admin SDK: {}", e.getMessage());
                 log.error("Check that GOOGLE_APPLICATION_CREDENTIALS points to a valid service account JSON.");
@@ -121,6 +134,7 @@ public class Main {
         String credentials   = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
         String fcmToken      = System.getenv("FCM_DEVICE_TOKEN");
         String authIds       = System.getenv("AUTHORIZED_USER_IDS");
+        String publicKey     = System.getenv("DEVICE_PUBLIC_KEY");
         String model         = System.getenv().getOrDefault("CLAUDE_MODEL", "claude-haiku-4-5-20251001");
         String port          = System.getenv().getOrDefault("PORT", "8080");
 
@@ -130,9 +144,10 @@ public class Main {
         String credentialsStatus = (credentials != null && !credentials.isBlank()) ? credentials : "NOT SET — FCM disabled";
         String fcmTokenStatus    = (fcmToken    != null && !fcmToken.isBlank())    ? "SET" : "NOT SET — FCM disabled";
         String authStatus        = (authIds     != null && !authIds.isBlank())     ? authIds : "NOT SET — open access";
+        String cryptoStatus      = (publicKey   != null && !publicKey.isBlank())   ? "SET (E2E enabled)" : "NOT SET — plaintext FCM";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 1 Day 9");
+        log.info("  Telegram Claw Relay Server  |  Phase 2 Day 23");
         log.info("---------------------------------------------------");
         log.info("  PORT:                           {}", port);
         log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);
@@ -141,6 +156,7 @@ public class Main {
         log.info("  CLAUDE_MODEL:                   {}", model);
         log.info("  GOOGLE_APPLICATION_CREDENTIALS: {}", credentialsStatus);
         log.info("  FCM_DEVICE_TOKEN:               {}", fcmTokenStatus);
+        log.info("  DEVICE_PUBLIC_KEY:              {}", cryptoStatus);
         log.info("  AUTHORIZED_USER_IDS:            {}", authStatus);
         log.info("---------------------------------------------------");
     }

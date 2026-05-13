@@ -51,10 +51,12 @@ public class MainActivity extends AppCompatActivity {
         permissionManifest = new PermissionManifest(this);
         auditLogger = new AuditLogger(this);
 
+        KeyManager.ensureKeyPair();
         requestNotificationPermission();
         requestLocationPermission();
         requestCameraPermission();
         setupTokenSection();
+        setupPublicKeySection();
         setupBotTokenSection();
         setupPermissionToggles();
         setupAuditLogSection();
@@ -122,6 +124,12 @@ public class MainActivity extends AppCompatActivity {
      * see and update it. Tapping Save persists the token immediately; subsequent tool
      * executions will use it to reply back to Person A via Telegram.</p>
      */
+    private void setupPublicKeySection() {
+        TextView keyText = findViewById(R.id.public_key_text);
+        String key = KeyManager.getPublicKeyBase64();
+        keyText.setText(key.isEmpty() ? "Key not yet generated." : key);
+    }
+
     private void setupBotTokenSection() {
         EditText editToken    = findViewById(R.id.edit_bot_token);
         EditText editRelayUrl = findViewById(R.id.edit_relay_url);

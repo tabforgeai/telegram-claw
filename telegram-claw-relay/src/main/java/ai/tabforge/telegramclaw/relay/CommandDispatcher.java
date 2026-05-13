@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Sends a structured ClawCommand to an Android Claw device via Firebase Cloud Messaging (FCM).
@@ -41,6 +42,7 @@ public class CommandDispatcher {
     private static final ObjectMapper mapper = new ObjectMapper();
 
     private final String deviceToken;
+    private final CryptoService cryptoService;
 
     /**
      * Initializes the Firebase Admin SDK and stores the target device FCM token.
@@ -61,8 +63,14 @@ public class CommandDispatcher {
      *                         for Day 5-6 smoke test it is provided via FCM_DEVICE_TOKEN env var
      * @throws IOException  if the credentials file cannot be read or is not valid JSON
      */
-    public CommandDispatcher(String credentialsPath, String deviceToken) throws IOException {
-        this.deviceToken = deviceToken;
+    /**
+     * @param cryptoService  if non-null, all FCM payloads are E2E-encrypted before dispatch;
+     *                       if null, plaintext FCM is used (backwards-compatible mode)
+     */
+    public CommandDispatcher(String credentialsPath, String deviceToken, CryptoService cryptoService)
+            throws IOException {
+        this.deviceToken   = deviceToken;
+        this.cryptoService = cryptoService;
 
         if (FirebaseApp.getApps().isEmpty()) {
             try (FileInputStream serviceAccount = new FileInputStream(credentialsPath)) {
@@ -96,16 +104,25 @@ public class CommandDispatcher {
     public void send(ClawCommand command) throws DispatchException {
         try {
             String paramsJson = mapper.writeValueAsString(command.getParameters());
+            Message.Builder builder = Message.builder().setToken(deviceToken);
 
-            Message message = Message.builder()
-                    .putData("tool", command.getToolName())
-                    .putData("params", paramsJson)
-                    .putData("chatId", String.valueOf(command.getSenderChatId()))
-                    .setToken(deviceToken)
-                    .build();
-
-            String messageId = FirebaseMessaging.getInstance().send(message);
-            log.info("[FCM] Dispatched '{}' → device. Message ID: {}", command.getToolName(), messageId);
+            if (cryptoService != null) {
+                String plaintext = mapper.writeValueAsString(Map.of(
+                        "tool",   command.getToolName(),
+                        "params", paramsJson,
+                        "chatId", String.valueOf(command.getSenderChatId())));
+                Map<String, String> encrypted = cryptoService.encrypt(plaintext);
+                encrypted.forEach(builder::putData);
+                log.info("[FCM] Dispatched '{}' → device (encrypted). Message ID: {}",
+                        command.getToolName(), FirebaseMessaging.getInstance().send(builder.build()));
+            } else {
+                builder.putData("tool",   command.getToolName())
+                       .putData("params", paramsJson)
+                       .putData("chatId", String.valueOf(command.getSenderChatId()));
+                String messageId = FirebaseMessaging.getInstance().send(builder.build());
+                log.info("[FCM] Dispatched '{}' → device (plaintext). Message ID: {}",
+                        command.getToolName(), messageId);
+            }
 
         } catch (Exception e) {
             throw new DispatchException(
@@ -134,13 +151,20 @@ public class CommandDispatcher {
      */
     public void sendFreezeAlert(String frozenSenderName) throws DispatchException {
         try {
-            Message message = Message.builder()
-                    .putData("tool", "__system_freeze")
-                    .putData("frozen_sender", frozenSenderName)
-                    .setToken(deviceToken)
-                    .build();
+            Message.Builder builder = Message.builder().setToken(deviceToken);
 
-            String messageId = FirebaseMessaging.getInstance().send(message);
+            if (cryptoService != null) {
+                String plaintext = mapper.writeValueAsString(Map.of(
+                        "tool",          "__system_freeze",
+                        "frozen_sender", frozenSenderName,
+                        "chatId",        "0"));
+                cryptoService.encrypt(plaintext).forEach(builder::putData);
+            } else {
+                builder.putData("tool",          "__system_freeze")
+                       .putData("frozen_sender", frozenSenderName);
+            }
+
+            String messageId = FirebaseMessaging.getInstance().send(builder.build());
             log.info("[FCM] Freeze alert dispatched to device owner. Message ID: {}", messageId);
 
         } catch (Exception e) {
