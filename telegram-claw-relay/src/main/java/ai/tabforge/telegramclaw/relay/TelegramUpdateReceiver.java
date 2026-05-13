@@ -45,6 +45,7 @@ public class TelegramUpdateReceiver implements HttpHandler {
     private final AuthorizationService authorizationService;
     private final ResponseRouter responseRouter;
     private final RateLimiter rateLimiter;
+    private final PendingCallbackStore pendingCallbackStore;
 
     /**
      * Constructs a TelegramUpdateReceiver wired to all processing pipeline components.
@@ -68,12 +69,14 @@ public class TelegramUpdateReceiver implements HttpHandler {
                                   CommandDispatcher commandDispatcher,
                                   AuthorizationService authorizationService,
                                   ResponseRouter responseRouter,
-                                  RateLimiter rateLimiter) {
+                                  RateLimiter rateLimiter,
+                                  PendingCallbackStore pendingCallbackStore) {
         this.intentParser = intentParser;
         this.commandDispatcher = commandDispatcher;
         this.authorizationService = authorizationService;
         this.responseRouter = responseRouter;
         this.rateLimiter = rateLimiter;
+        this.pendingCallbackStore = pendingCallbackStore;
     }
 
     /**
@@ -199,7 +202,9 @@ public class TelegramUpdateReceiver implements HttpHandler {
                     log.debug("[DISPATCH_SKIP] FCM not configured — command parsed but not sent.");
                 }
 
-                if (!QUERY_TOOLS.contains(command.getToolName())) {
+                if (QUERY_TOOLS.contains(command.getToolName())) {
+                    pendingCallbackStore.store(command.getSenderChatId(), text);
+                } else {
                     responseRouter.sendReply(command.getSenderChatId(),
                             command.getNaturalLanguageReply(), command.getToolName());
                 }

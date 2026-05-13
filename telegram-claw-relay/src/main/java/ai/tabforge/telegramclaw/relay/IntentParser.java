@@ -163,13 +163,43 @@ public class IntentParser {
      * @param rawResult  the raw result string from the Android device
      * @return  Claude's 1-2 sentence natural language interpretation, or the raw result if the call fails
      */
-    public String interpretResult(String toolName, String rawResult) {
+    /**
+     * Interprets a raw tool result in natural language by asking Claude.
+     *
+     * <p>Analogy: like a lab technician translating a blood test printout into plain English
+     * for a patient — the raw numbers (device sensor readings) are accurate but unreadable;
+     * Claude reads them and says "Your iron is a little low, but everything else looks fine."
+     * This is the second Claude call in the request-response loop: the first call (in
+     * {@link #parseIntent}) picks the tool; this call interprets the device's answer.</p>
+     *
+     * <p>The original question is included so Claude can:
+     * <ol>
+     *   <li>Respond in the same language the person used (Serbian, English, etc.)</li>
+     *   <li>Frame the answer in terms of what the person actually wanted to know</li>
+     *   <li>End with a direct conclusion ("Based on this, they are probably sleeping.")</li>
+     * </ol>
+     * </p>
+     *
+     * <p>Called by: {@link CallbackReceiver#handle} for query tools after Android reports back.</p>
+     *
+     * @param toolName          the tool that produced the result, e.g. {@code "get_device_context"}
+     * @param rawResult         the raw result string from the Android device
+     * @param originalQuestion  the original message from Person A, used for language detection
+     *                          and answer framing; may be null if not available
+     * @return  Claude's natural language answer, or a formatted fallback if the call fails
+     */
+    public String interpretResult(String toolName, String rawResult, String originalQuestion) {
         try {
-            String userMessage =
-                    "The remote Android device executed the \"" + toolName + "\" tool and returned:\n\n" +
-                    rawResult + "\n\n" +
-                    "Write a brief (1-2 sentence) natural language interpretation that tells " +
-                    "the person who asked what this result means. Be direct and conversational.";
+            String questionLine = (originalQuestion != null && !originalQuestion.isBlank())
+                    ? "The person asked: \"" + originalQuestion + "\"\n\n"
+                    : "";
+
+            String userMessage = questionLine +
+                    "The Android device executed \"" + toolName + "\" and returned:\n" + rawResult + "\n\n" +
+                    "Write a 2-3 sentence answer in the same language as the question. " +
+                    "Be direct and conversational. " +
+                    "End with a clear one-sentence conclusion " +
+                    "(e.g. 'Based on this, they are probably sleeping.' or 'They are most likely awake.').";
 
             MessageCreateParams params = MessageCreateParams.builder()
                     .model(model)

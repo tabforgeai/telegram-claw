@@ -95,9 +95,10 @@ public class Main {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         ResponseRouter responseRouter = new ResponseRouter(botToken);
         RateLimiter rateLimiter = new RateLimiter();
+        PendingCallbackStore pendingCallbackStore = new PendingCallbackStore(responseRouter);
 
-        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService, responseRouter, rateLimiter));
-        server.createContext("/callback", new CallbackReceiver(intentParser, responseRouter));
+        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService, responseRouter, rateLimiter, pendingCallbackStore));
+        server.createContext("/callback", new CallbackReceiver(intentParser, responseRouter, pendingCallbackStore));
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
 

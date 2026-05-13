@@ -48,16 +48,20 @@ public class CallbackReceiver implements HttpHandler {
 
     private final IntentParser intentParser;
     private final ResponseRouter responseRouter;
+    private final PendingCallbackStore pendingCallbackStore;
 
     /**
-     * Constructs a CallbackReceiver wired to the intent parser and response router.
+     * Constructs a CallbackReceiver wired to all processing components.
      *
-     * @param intentParser    used to interpret query-tool results via a second Claude call
-     * @param responseRouter  delivers the final answer to Person A via Telegram sendMessage
+     * @param intentParser         used to interpret query-tool results via a second Claude call
+     * @param responseRouter       delivers the final answer to Person A via Telegram sendMessage
+     * @param pendingCallbackStore claims the original question and cancels the timeout
      */
-    public CallbackReceiver(IntentParser intentParser, ResponseRouter responseRouter) {
+    public CallbackReceiver(IntentParser intentParser, ResponseRouter responseRouter,
+                            PendingCallbackStore pendingCallbackStore) {
         this.intentParser = intentParser;
         this.responseRouter = responseRouter;
+        this.pendingCallbackStore = pendingCallbackStore;
     }
 
     /**
@@ -96,7 +100,12 @@ public class CallbackReceiver implements HttpHandler {
 
             String reply;
             if (QUERY_TOOLS.contains(tool)) {
-                reply = intentParser.interpretResult(tool, result);
+                String originalQuestion = pendingCallbackStore.claim(chatId);
+                if (originalQuestion == null) {
+                    log.warn("[CALLBACK] Timeout already fired for chatId={} — dropping late result.", chatId);
+                    return;
+                }
+                reply = intentParser.interpretResult(tool, result, originalQuestion);
             } else {
                 reply = result;
             }
