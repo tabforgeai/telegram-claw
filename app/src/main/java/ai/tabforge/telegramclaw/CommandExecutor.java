@@ -5,6 +5,7 @@ import android.util.Log;
 
 import ai.tabforge.telegramclaw.tool.AudioManagerTool;
 import ai.tabforge.telegramclaw.tool.DeviceContextTool;
+import ai.tabforge.telegramclaw.tool.MediaControlTool;
 import ai.tabforge.telegramclaw.tool.NotificationSenderTool;
 
 /**
@@ -144,8 +145,15 @@ public class CommandExecutor {
     }
 
     private void executeMediaControl(String paramsJson, long chatId) {
-        Log.i(TAG, "[STUB] media_control — Day 16.");
-        // TODO Day 16: MediaSession or Intent to control active media player
+        try {
+            String result = new MediaControlTool(context).execute(paramsJson);
+            Log.i(TAG, "[media_control] " + result);
+            auditLogger.log(AuditLogger.Status.SUCCESS, "media_control", chatId, result);
+            telegramReplyClient.sendCallback(chatId, "media_control", result);
+        } catch (Exception e) {
+            Log.e(TAG, "[media_control] Execution failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "media_control", chatId, e.getMessage());
+        }
     }
 
     private void executeNotificationSender(String paramsJson, long chatId) {
