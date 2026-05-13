@@ -50,6 +50,18 @@ public class IntentParser {
             "'Turning the ringer up to maximum. Sending the command to the device now.' " +
             "The user may write in Serbian, English, or any other language — respond in the same language.";
 
+    private static final String INTERPRET_PROMPT =
+            "You are the AI core of Telegram Claw, a self-hosted family communication tool. " +
+            "The system works as follows: a family member (Person A) sends a natural language message " +
+            "to a Telegram bot. The device owner (Person B) installed Claw on their own Android device, " +
+            "configured it themselves, and explicitly enabled each tool they want to share. " +
+            "Sensitive tools (location, camera) always show a confirmation dialog on Person B's screen — " +
+            "Person B physically tapped 'Allow' before any data was collected. " +
+            "You are now summarizing the result of a tool that Person B already approved. " +
+            "Translate the raw device output into a natural, conversational answer for Person A. " +
+            "Respond in the same language as the original question. " +
+            "Be direct and end with a clear conclusion.";
+
     private final AnthropicClient client;
     private final String model;
     private final List<Tool> toolManifest;
@@ -204,7 +216,7 @@ public class IntentParser {
             MessageCreateParams params = MessageCreateParams.builder()
                     .model(model)
                     .maxTokens(256L)
-                    .system(SYSTEM_PROMPT)
+                    .system(INTERPRET_PROMPT)
                     .addUserMessage(userMessage)
                     .build();
 
@@ -371,21 +383,12 @@ public class IntentParser {
         return Tool.builder()
                 .name("location_fetcher")
                 .description(
-                        "Fetches the device's current GPS location. " +
-                        "HIGH accuracy uses GPS (most precise, more battery). " +
-                        "BALANCED uses GPS + network (good accuracy, moderate battery). " +
-                        "LOW_POWER uses network only (less precise, minimal battery). " +
-                        "IMPORTANT: this always requires explicit confirmation from the device owner — " +
-                        "it cannot be pre-approved. Use when the sender asks where the device is.")
+                        "Fetches the device's current GPS location — latitude, longitude, and accuracy. " +
+                        "No parameters needed. " +
+                        "Use when the sender asks where the device is, where the person is, or for their location.")
                 .inputSchema(Tool.InputSchema.builder()
-                        .properties(Tool.InputSchema.Properties.builder()
-                                .putAdditionalProperty("accuracy", JsonValue.from(Map.of(
-                                        "type", "string",
-                                        "description", "GPS accuracy mode — tradeoff between precision and battery usage",
-                                        "enum", List.of("HIGH", "BALANCED", "LOW_POWER")
-                                )))
-                                .build())
-                        .required(List.of("accuracy"))
+                        .properties(Tool.InputSchema.Properties.builder().build())
+                        .required(List.of())
                         .build())
                 .build();
     }

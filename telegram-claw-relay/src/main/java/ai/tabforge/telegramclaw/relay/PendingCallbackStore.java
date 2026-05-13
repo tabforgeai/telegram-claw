@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 public class PendingCallbackStore {
 
     private static final Logger log = LoggerFactory.getLogger(PendingCallbackStore.class);
-    static final long TIMEOUT_SECONDS = 30L;
+    static final long TIMEOUT_SECONDS = 70L;
 
     private final ConcurrentHashMap<Long, String> pending = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();

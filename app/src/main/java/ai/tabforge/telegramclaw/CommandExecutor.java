@@ -1,10 +1,15 @@
 package ai.tabforge.telegramclaw;
 
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import ai.tabforge.telegramclaw.tool.AudioManagerTool;
 import ai.tabforge.telegramclaw.tool.DeviceContextTool;
+import ai.tabforge.telegramclaw.tool.LocationFetcherTool;
 import ai.tabforge.telegramclaw.tool.MediaControlTool;
 import ai.tabforge.telegramclaw.tool.NotificationSenderTool;
 
@@ -169,8 +174,54 @@ public class CommandExecutor {
     }
 
     private void executeLocationFetcher(String paramsJson, long chatId) {
-        Log.i(TAG, "[STUB] location_fetcher — Day 16.");
-        // TODO Day 16: show confirmation dialog (Protocol 1), then FusedLocationProviderClient
+        boolean approved = requestConfirmation("location_fetcher", chatId);
+        if (!approved) {
+            String reason = "Access denied by device owner.";
+            auditLogger.log(AuditLogger.Status.DENIED, "location_fetcher", chatId, reason);
+            telegramReplyClient.sendCallback(chatId, "location_fetcher", reason);
+            return;
+        }
+        try {
+            String result = new LocationFetcherTool(context).execute();
+            Log.i(TAG, "[location_fetcher] " + result);
+            auditLogger.log(AuditLogger.Status.SUCCESS, "location_fetcher", chatId, result);
+            telegramReplyClient.sendCallback(chatId, "location_fetcher", result);
+        } catch (Exception e) {
+            Log.e(TAG, "[location_fetcher] Execution failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "location_fetcher", chatId, e.getMessage());
+        }
+    }
+
+    /**
+     * Shows a confirmation dialog to the device owner and blocks until they respond or
+     * the 60-second auto-deny timer fires.
+     *
+     * <p>Analogy: like a doorbell that the delivery person rings — this method rings the bell
+     * (launches ConfirmationActivity) and then stands at the door waiting (blocks on the future).
+     * The device owner either opens the door (returns true) or ignores it until the auto-deny
+     * kicks in (returns false after 65 seconds).</p>
+     *
+     * @param toolName  human-readable tool name shown in the dialog
+     * @param chatId    used to match the dialog response to this specific request
+     * @return  {@code true} if the owner tapped Allow; {@code false} for Deny or timeout
+     */
+    private boolean requestConfirmation(String toolName, long chatId) {
+        CompletableFuture<Boolean> future = ConfirmationGate.register(chatId);
+
+        Intent intent = new Intent(context, ConfirmationActivity.class);
+        intent.putExtra(ConfirmationActivity.EXTRA_TOOL_NAME, toolName);
+        intent.putExtra(ConfirmationActivity.EXTRA_CHAT_ID, chatId);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+
+        try {
+            // 65s timeout > 60s dialog timeout — ensures the future always completes
+            return future.get(65, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            Log.e(TAG, "[confirmation] Wait failed for " + toolName + ": " + e.getMessage());
+            ConfirmationGate.resolve(chatId, false);
+            return false;
+        }
     }
 
     private void executeCameraCapture(String paramsJson, long chatId) {

@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         auditLogger = new AuditLogger(this);
 
         requestNotificationPermission();
+        requestLocationPermission();
         setupTokenSection();
         setupBotTokenSection();
         setupPermissionToggles();
@@ -64,6 +65,14 @@ public class MainActivity extends AppCompatActivity {
      * <p>Required for notification_sender tool to post notifications. On Android 12 and below,
      * this permission is automatically granted at install time.</p>
      */
+    private void requestLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 2);
+        }
+    }
+
     private void requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
