@@ -1,7 +1,5 @@
 package ai.tabforge.telegramclaw.relay;
 
-import com.anthropic.client.AnthropicClient;
-import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.sun.net.httpserver.HttpServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +21,14 @@ import java.util.concurrent.Executors;
  *   <li>TELEGRAM_BOT_TOKEN            — the token from BotFather (format: 1234567890:ABCdef...)</li>
  *   <li>WEBHOOK_URL                   — the public HTTPS URL where Telegram will POST updates
  *                                       (e.g., https://xxxx.ngrok.io/webhook)</li>
- *   <li>ANTHROPIC_API_KEY             — Anthropic API key for Claude intent parsing</li>
+ *   <li>GROQ_API_KEY                  — Groq API key (default provider; free tier at console.groq.com)</li>
+ *   <li>ANTHROPIC_API_KEY             — Anthropic API key (set LLM_PROVIDER=anthropic to use)</li>
+ *   <li>LLM_PROVIDER                  — "groq" (default) or "anthropic"</li>
+ *   <li>LLM_MODEL                     — model override; defaults to llama-3.3-70b-versatile (groq) or
+ *                                       claude-haiku-4-5-20251001 (anthropic)</li>
  *   <li>GOOGLE_APPLICATION_CREDENTIALS — absolute path to the Firebase service account JSON file</li>
  *   <li>FCM_DEVICE_TOKEN              — FCM registration token of the target Android device</li>
  *   <li>PORT                          — HTTP port to listen on (default: 8080)</li>
- *   <li>CLAUDE_MODEL                  — model for intent parsing (default: claude-haiku-4-5-20251001)</li>
  * </ul>
  * </p>
  */
@@ -76,8 +77,7 @@ public class Main {
         TokenStore tokenStore = new TokenStore(tokenStorePath, tokenTtlDays);
         AuthorizationService authorizationService = new AuthorizationService(authorizedIds, tokenStore);
 
-        AnthropicClient anthropicClient = AnthropicOkHttpClient.fromEnv();
-        IntentParser intentParser = new IntentParser(anthropicClient);
+        IntentParser intentParser = LlmClientFactory.create();
 
         CryptoService cryptoService = null;
         String publicKeyEnv = System.getenv("DEVICE_PUBLIC_KEY");
@@ -134,36 +134,50 @@ public class Main {
      * <p>Called by: main(), once before any network activity.</p>
      */
     private static void printStartupBanner() {
-        String token         = System.getenv("TELEGRAM_BOT_TOKEN");
-        String webhook       = System.getenv("WEBHOOK_URL");
-        String anthropicKey  = System.getenv("ANTHROPIC_API_KEY");
-        String credentials   = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-        String fcmToken      = System.getenv("FCM_DEVICE_TOKEN");
-        String authIds       = System.getenv("AUTHORIZED_USER_IDS");
-        String publicKey     = System.getenv("DEVICE_PUBLIC_KEY");
-        String model         = System.getenv().getOrDefault("CLAUDE_MODEL", "claude-haiku-4-5-20251001");
-        String port          = System.getenv().getOrDefault("PORT", "8080");
+        String token          = System.getenv("TELEGRAM_BOT_TOKEN");
+        String webhook        = System.getenv("WEBHOOK_URL");
+        String provider       = System.getenv().getOrDefault("LLM_PROVIDER", "groq");
+        String groqKey        = System.getenv("GROQ_API_KEY");
+        String anthropicKey   = System.getenv("ANTHROPIC_API_KEY");
+        String llmModel       = System.getenv("LLM_MODEL");
+        String credentials    = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+        String fcmToken       = System.getenv("FCM_DEVICE_TOKEN");
+        String authIds        = System.getenv("AUTHORIZED_USER_IDS");
+        String publicKey      = System.getenv("DEVICE_PUBLIC_KEY");
+        String port           = System.getenv().getOrDefault("PORT", "8080");
         String tokenStorePath = System.getenv().getOrDefault("TOKEN_STORE_PATH", "tokens.json");
-        String tokenTtlDays  = System.getenv().getOrDefault("TOKEN_TTL_DAYS", "30");
+        String tokenTtlDays   = System.getenv().getOrDefault("TOKEN_TTL_DAYS", "30");
 
-        String tokenStatus       = (token       != null && !token.isBlank())       ? "SET" : "NOT SET (required)";
-        String webhookStatus     = (webhook     != null && !webhook.isBlank())     ? webhook : "NOT SET — run ngrok first";
-        String anthropicStatus   = (anthropicKey != null && !anthropicKey.isBlank()) ? "SET" : "NOT SET (required)";
-        String credentialsStatus = (credentials != null && !credentials.isBlank()) ? credentials : "NOT SET — FCM disabled";
-        String fcmTokenStatus    = (fcmToken    != null && !fcmToken.isBlank())    ? "SET" : "NOT SET — FCM disabled";
-        String authStatus        = (authIds     != null && !authIds.isBlank())     ? authIds : "NOT SET — open access";
-        String cryptoStatus      = (publicKey   != null && !publicKey.isBlank())   ? "SET (E2E enabled)" : "NOT SET — plaintext FCM";
+        String tokenStatus    = (token  != null && !token.isBlank())  ? "SET" : "NOT SET (required)";
+        String webhookStatus  = (webhook != null && !webhook.isBlank()) ? webhook : "NOT SET — run ngrok first";
+        String credStatus     = (credentials != null && !credentials.isBlank()) ? credentials : "NOT SET — FCM disabled";
+        String fcmStatus      = (fcmToken    != null && !fcmToken.isBlank())    ? "SET" : "NOT SET — FCM disabled";
+        String authStatus     = (authIds     != null && !authIds.isBlank())     ? authIds : "NOT SET — open access";
+        String cryptoStatus   = (publicKey   != null && !publicKey.isBlank())   ? "SET (E2E enabled)" : "NOT SET — plaintext FCM";
+
+        String llmProviderStatus;
+        String defaultModel;
+        if ("anthropic".equalsIgnoreCase(provider)) {
+            llmProviderStatus = "anthropic | ANTHROPIC_API_KEY: " +
+                    ((anthropicKey != null && !anthropicKey.isBlank()) ? "SET" : "NOT SET (required)");
+            defaultModel = "claude-haiku-4-5-20251001";
+        } else {
+            llmProviderStatus = "groq | GROQ_API_KEY: " +
+                    ((groqKey != null && !groqKey.isBlank()) ? "SET" : "NOT SET (required)");
+            defaultModel = "llama-3.3-70b-versatile";
+        }
+        String modelStatus = (llmModel != null && !llmModel.isBlank()) ? llmModel : defaultModel + " (default)";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 2 Day 26");
+        log.info("  Telegram Claw Relay Server  |  v1.0.0");
         log.info("---------------------------------------------------");
         log.info("  PORT:                           {}", port);
         log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);
         log.info("  WEBHOOK_URL:                    {}", webhookStatus);
-        log.info("  ANTHROPIC_API_KEY:              {}", anthropicStatus);
-        log.info("  CLAUDE_MODEL:                   {}", model);
-        log.info("  GOOGLE_APPLICATION_CREDENTIALS: {}", credentialsStatus);
-        log.info("  FCM_DEVICE_TOKEN:               {}", fcmTokenStatus);
+        log.info("  LLM_PROVIDER:                   {}", llmProviderStatus);
+        log.info("  LLM_MODEL:                      {}", modelStatus);
+        log.info("  GOOGLE_APPLICATION_CREDENTIALS: {}", credStatus);
+        log.info("  FCM_DEVICE_TOKEN:               {}", fcmStatus);
         log.info("  TOKEN_STORE_PATH:               {}", tokenStorePath);
         log.info("  TOKEN_TTL_DAYS:                 {}", tokenTtlDays);
         log.info("  DEVICE_PUBLIC_KEY:              {}", cryptoStatus);
