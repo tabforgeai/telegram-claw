@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
@@ -40,6 +41,44 @@ public class MainActivity extends AppCompatActivity {
 
     private PermissionManifest permissionManifest;
     private AuditLogger auditLogger;
+    private PairingManager pairingManager;
+    private CountDownTimer pairingTimer;
+    private android.content.SharedPreferences.OnSharedPreferenceChangeListener permChangeListener;
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (permissionManifest == null) return;
+        refreshAllSwitches();
+        // Live listener — fires immediately when KillSwitchReceiver changes permissions
+        // in the same process (e.g., SMS arrives while MainActivity is visible).
+        permChangeListener = (prefs, key) -> refreshAllSwitches();
+        getSharedPreferences("claw_permissions", MODE_PRIVATE)
+                .registerOnSharedPreferenceChangeListener(permChangeListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if (permChangeListener != null) {
+            getSharedPreferences("claw_permissions", MODE_PRIVATE)
+                    .unregisterOnSharedPreferenceChangeListener(permChangeListener);
+        }
+    }
+
+    private void refreshAllSwitches() {
+        refreshSwitch(R.id.switch_audio_manager,       "audio_manager");
+        refreshSwitch(R.id.switch_get_device_context,  "get_device_context");
+        refreshSwitch(R.id.switch_media_control,       "media_control");
+        refreshSwitch(R.id.switch_notification_sender, "notification_sender");
+        refreshSwitch(R.id.switch_location_fetcher,    "location_fetcher");
+        refreshSwitch(R.id.switch_camera_capture,      "camera_capture");
+    }
+
+    private void refreshSwitch(int switchId, String toolName) {
+        SwitchCompat toggle = findViewById(switchId);
+        if (toggle != null) toggle.setChecked(permissionManifest.isEnabled(toolName));
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,9 +94,12 @@ public class MainActivity extends AppCompatActivity {
         requestNotificationPermission();
         requestLocationPermission();
         requestCameraPermission();
+        requestSmsPermission();
         setupTokenSection();
         setupPublicKeySection();
         setupBotTokenSection();
+        setupPairingSection();
+        setupKillSwitchSection();
         setupPermissionToggles();
         setupAuditLogSection();
     }
@@ -73,6 +115,14 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                     new String[]{android.Manifest.permission.CAMERA}, 3);
+        }
+    }
+
+    private void requestSmsPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECEIVE_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.RECEIVE_SMS}, 4);
         }
     }
 
@@ -143,6 +193,71 @@ public class MainActivity extends AppCompatActivity {
             TelegramReplyClient.saveRelayUrl(this, editRelayUrl.getText().toString().trim());
             Toast.makeText(this, "Settings saved.", Toast.LENGTH_SHORT).show();
         });
+    }
+
+    /**
+     * Wires the Kill Switch section to {@link KillSwitchReceiver}.
+     * Pre-fills the phrase field with the stored value (or the default) so the device
+     * owner can see what's currently active without having to remember it.
+     */
+    private void setupKillSwitchSection() {
+        EditText editPhrase = findViewById(R.id.edit_kill_phrase);
+        Button saveBtn = findViewById(R.id.btn_save_kill_phrase);
+
+        editPhrase.setText(KillSwitchReceiver.loadKillPhrase(this));
+
+        saveBtn.setOnClickListener(v -> {
+            String phrase = editPhrase.getText().toString().trim();
+            if (phrase.isEmpty()) {
+                Toast.makeText(this, "Kill phrase cannot be empty.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            KillSwitchReceiver.saveKillPhrase(this, phrase);
+            Toast.makeText(this, "Kill phrase saved.", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    /**
+     * Sets up the Pairing section: shows any active PIN with a live countdown, or
+     * a prompt when none is active. "Generate PIN" creates a new PIN, stores it locally,
+     * and POSTs it to the relay /pair endpoint in a background thread.
+     */
+    private void setupPairingSection() {
+        pairingManager = new PairingManager(this);
+        TextView pinText = findViewById(R.id.pairing_pin_text);
+        Button generateBtn = findViewById(R.id.btn_generate_pin);
+
+        PairingManager.ActivePin existing = pairingManager.getActivePin();
+        if (existing != null) {
+            startPinCountdown(pinText, existing.pin, existing.remainingMs());
+        }
+
+        generateBtn.setOnClickListener(v -> {
+            String relayUrl = TelegramReplyClient.loadRelayUrl(this);
+            if (relayUrl.isEmpty()) {
+                Toast.makeText(this, "Set Relay URL first.", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            if (pairingTimer != null) pairingTimer.cancel();
+            String pin = pairingManager.generateAndRegisterPin(relayUrl);
+            startPinCountdown(pinText, pin, 10 * 60 * 1000L);
+        });
+    }
+
+    private void startPinCountdown(TextView pinText, String pin, long remainingMs) {
+        if (pairingTimer != null) pairingTimer.cancel();
+        pairingTimer = new CountDownTimer(remainingMs, 1000L) {
+            @Override
+            public void onTick(long millisUntilFinished) {
+                long mins = millisUntilFinished / 60000;
+                long secs = (millisUntilFinished % 60000) / 1000;
+                pinText.setText(String.format("%s  (%d:%02d remaining)", pin, mins, secs));
+            }
+            @Override
+            public void onFinish() {
+                pinText.setText("PIN expired — tap Generate to create a new one.");
+            }
+        }.start();
     }
 
     /**

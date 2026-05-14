@@ -127,6 +127,76 @@
             android:layout_height="wrap_content"
             android:text="Save Settings" />
 
+        <!-- ── Pairing ──────────────────────────────────────────── -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Pairing"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="24dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Generate a one-time PIN and share it with the person you want to authorize. Valid for 10 minutes."
+            android:textSize="13sp"
+            android:paddingBottom="8dp" />
+
+        <TextView
+            android:id="@+id/pairing_pin_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No active PIN — tap Generate."
+            android:textIsSelectable="true"
+            android:fontFamily="monospace"
+            android:textSize="16sp"
+            android:background="#F5F5F5"
+            android:padding="12dp"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_generate_pin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Generate PIN" />
+
+        <!-- ── Kill Switch ──────────────────────────────────────── -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Kill Switch"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="24dp"
+            android:paddingBottom="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Send an SMS containing this phrase to instantly disable all tools and stop Claw."
+            android:textSize="13sp"
+            android:paddingBottom="8dp" />
+
+        <EditText
+            android:id="@+id/edit_kill_phrase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="CLAW KILL"
+            android:inputType="textVisiblePassword"
+            android:fontFamily="monospace"
+            android:textSize="14sp"
+            android:paddingBottom="8dp" />
+
+        <Button
+            android:id="@+id/btn_save_kill_phrase"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save Phrase" />
+
         <!-- ── Permissions ──────────────────────────────────────── -->
 
         <TextView

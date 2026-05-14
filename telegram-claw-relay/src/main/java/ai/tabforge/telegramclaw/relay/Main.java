@@ -110,8 +110,11 @@ public class Main {
         RateLimiter rateLimiter = new RateLimiter();
         PendingCallbackStore pendingCallbackStore = new PendingCallbackStore(responseRouter);
 
-        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService, responseRouter, rateLimiter, pendingCallbackStore));
+        PairingService pairingService = new PairingService(authorizationService);
+
+        server.createContext("/webhook", new TelegramUpdateReceiver(intentParser, commandDispatcher, authorizationService, responseRouter, rateLimiter, pendingCallbackStore, pairingService));
         server.createContext("/callback", new CallbackReceiver(intentParser, responseRouter, pendingCallbackStore));
+        server.createContext("/pair", new PairHandler(pairingService));
         server.setExecutor(Executors.newVirtualThreadPerTaskExecutor());
         server.start();
 
@@ -147,7 +150,7 @@ public class Main {
         String cryptoStatus      = (publicKey   != null && !publicKey.isBlank())   ? "SET (E2E enabled)" : "NOT SET — plaintext FCM";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 2 Day 23");
+        log.info("  Telegram Claw Relay Server  |  Phase 2 Day 24");
         log.info("---------------------------------------------------");
         log.info("  PORT:                           {}", port);
         log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);

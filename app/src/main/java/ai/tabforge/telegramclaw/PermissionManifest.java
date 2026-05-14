@@ -90,4 +90,19 @@ public class PermissionManifest {
         prefs.edit().putBoolean(KEY_PREFIX + toolName, enabled).apply();
         Log.i(TAG, "Tool '" + toolName + "' " + (enabled ? "enabled" : "disabled") + " by device owner.");
     }
+
+    /**
+     * Disables every tool atomically. Called by {@link KillSwitchReceiver} on kill-switch activation.
+     * The device owner must re-enable tools manually via MainActivity to resume operation.
+     */
+    public void disableAll() {
+        SharedPreferences.Editor editor = prefs.edit();
+        for (String tool : new String[]{
+                "audio_manager", "get_device_context", "media_control",
+                "notification_sender", "location_fetcher", "camera_capture"}) {
+            editor.putBoolean(KEY_PREFIX + tool, false);
+        }
+        editor.apply();
+        Log.w(TAG, "All tools disabled by kill switch.");
+    }
 }

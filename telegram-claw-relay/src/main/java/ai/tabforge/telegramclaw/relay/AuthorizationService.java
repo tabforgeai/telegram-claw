@@ -3,8 +3,7 @@ package ai.tabforge.telegramclaw.relay;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Decides whether a given Telegram user ID is allowed to send commands to this device.
@@ -28,7 +27,7 @@ public class AuthorizationService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthorizationService.class);
 
-    private final Set<Long> authorizedIds;
+    private final CopyOnWriteArraySet<Long> authorizedIds;
     private final boolean openAccess;
 
     /**
@@ -47,12 +46,12 @@ public class AuthorizationService {
      */
     public AuthorizationService(String authorizedIdsEnvVar) {
         if (authorizedIdsEnvVar == null || authorizedIdsEnvVar.isBlank()) {
-            this.authorizedIds = Set.of();
+            this.authorizedIds = new CopyOnWriteArraySet<>();
             this.openAccess = true;
             log.warn("AUTHORIZED_USER_IDS not set — all senders accepted (open access).");
             log.warn("Set AUTHORIZED_USER_IDS=<your Telegram user ID> to restrict access.");
         } else {
-            Set<Long> ids = new HashSet<>();
+            CopyOnWriteArraySet<Long> ids = new CopyOnWriteArraySet<>();
             for (String part : authorizedIdsEnvVar.split(",")) {
                 String trimmed = part.trim();
                 if (trimmed.isEmpty()) continue;
@@ -62,7 +61,7 @@ public class AuthorizationService {
                     log.warn("Skipping invalid user ID in AUTHORIZED_USER_IDS: '{}'", trimmed);
                 }
             }
-            this.authorizedIds = Set.copyOf(ids);
+            this.authorizedIds = ids;
             this.openAccess = false;
             log.info("AuthorizationService initialized | {} authorized user ID(s)", authorizedIds.size());
         }
@@ -85,6 +84,19 @@ public class AuthorizationService {
     public boolean isAuthorized(long telegramUserId) {
         if (openAccess) return true;
         return authorizedIds.contains(telegramUserId);
+    }
+
+    /**
+     * Dynamically adds a Telegram user ID to the authorized set at runtime.
+     * Called by {@link PairingService} when a valid pairing PIN is accepted.
+     * In open-access mode this is a no-op since all senders are already accepted.
+     *
+     * @param chatId      Telegram user ID to authorize
+     * @param senderName  display name (for logging only)
+     */
+    public void addAuthorizedId(long chatId, String senderName) {
+        authorizedIds.add(chatId);
+        log.info("[AUTH] {} (id={}) added to authorized set via pairing.", senderName, chatId);
     }
 
     /**

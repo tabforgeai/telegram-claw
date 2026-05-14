@@ -46,6 +46,7 @@ public class TelegramUpdateReceiver implements HttpHandler {
     private final ResponseRouter responseRouter;
     private final RateLimiter rateLimiter;
     private final PendingCallbackStore pendingCallbackStore;
+    private final PairingService pairingService;
 
     /**
      * Constructs a TelegramUpdateReceiver wired to all processing pipeline components.
@@ -64,19 +65,22 @@ public class TelegramUpdateReceiver implements HttpHandler {
      * @param authorizationService checks whether a Telegram user ID is on the whitelist
      * @param responseRouter       sends Claude's reply back to Person A via Telegram sendMessage
      * @param rateLimiter          tracks command frequency and auto-freezes anomalous senders
+     * @param pairingService       validates one-time PINs from unauthorized senders (Protocol 6)
      */
     public TelegramUpdateReceiver(IntentParser intentParser,
                                   CommandDispatcher commandDispatcher,
                                   AuthorizationService authorizationService,
                                   ResponseRouter responseRouter,
                                   RateLimiter rateLimiter,
-                                  PendingCallbackStore pendingCallbackStore) {
+                                  PendingCallbackStore pendingCallbackStore,
+                                  PairingService pairingService) {
         this.intentParser = intentParser;
         this.commandDispatcher = commandDispatcher;
         this.authorizationService = authorizationService;
         this.responseRouter = responseRouter;
         this.rateLimiter = rateLimiter;
         this.pendingCallbackStore = pendingCallbackStore;
+        this.pairingService = pairingService;
     }
 
     /**
@@ -158,6 +162,27 @@ public class TelegramUpdateReceiver implements HttpHandler {
         if (sender == null) {
             log.warn("[MESSAGE] Received message with no sender — ignoring.");
             return;
+        }
+
+        // PIN check must happen BEFORE auth — in open-access mode isAuthorized() returns true
+        // for everyone, so an unauthorized user would bypass this block entirely.
+        if (text != null && text.matches("[A-Za-z0-9]{6}")) {
+            long chatId = message.getChat().getId();
+            if (pairingService.attemptPair(sender.getId(), sender.displayName(), text)) {
+                responseRouter.sendReply(chatId,
+                        "Paired! You are now authorized to send commands to this device.",
+                        "pair");
+                return;
+            }
+            // PIN not matched — if unauthorized, tell them and stop; if authorized, fall through
+            if (!authorizationService.isAuthorized(sender.getId())) {
+                responseRouter.sendReply(chatId,
+                        "Invalid or expired pairing code. Ask the device owner to generate a new one.",
+                        "pair");
+                log.warn("[DENIED] {} (id={}) sent invalid PIN — rejected.",
+                        sender.displayName(), sender.getId());
+                return;
+            }
         }
 
         if (!authorizationService.isAuthorized(sender.getId())) {
