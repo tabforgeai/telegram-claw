@@ -103,7 +103,7 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 
 ## Current Status
 
-> `v0.2.0-dev` — Full end-to-end loop working on a real Android device.
+> `v0.3.0` — All 6 tools working. All 8 security protocols implemented.
 
 **What works right now:**
 
@@ -111,21 +111,25 @@ Telegram Bot API  ──HTTPS POST──►  Relay Server (Java / Maven)
 |---|---|
 | ✅ | Relay server receives Telegram messages via webhook |
 | ✅ | Claude AI parses natural language into structured tool calls |
-| ✅ | All 6 tool definitions built and sent to Claude on every message |
 | ✅ | FCM push — command dispatched to Android device via Firebase |
-| ✅ | Authorization — Telegram user ID whitelist (only approved senders accepted) |
+| ✅ | E2E Encryption — RSA-OAEP + AES-256-GCM, private key stays in Android Keystore (Protocol 2) |
+| ✅ | Authorization — static whitelist + dynamic PIN pairing, survives relay restarts (Protocols 4, 6) |
 | ✅ | Rate limiting — auto-freeze on command flood (Protocol 8) |
 | ✅ | Android app receives FCM commands via persistent ForegroundService |
-| ✅ | Permission Manifest — all tools off by default, device owner enables each one (Protocol 3) |
-| ✅ | Audit Log — every executed and denied command logged on-device (Protocol 5) |
-| ✅ | `get_device_context` — reads battery, screen, sound profile, ambient light, motion |
+| ✅ | Permission Manifest — all tools off by default, dedicated settings screen (Protocol 3) |
+| ✅ | Audit Log — every command logged on-device, auto-pruned after 30 days (Protocol 5) |
+| ✅ | `get_device_context` — battery, screen, sound profile, ambient light, motion |
 | ✅ | `audio_manager` — sets volume, overrides silent mode with force ping |
 | ✅ | `notification_sender` — toast, status bar notification, heads-up alert |
+| ✅ | `media_control` — play, pause, skip |
+| ✅ | `location_fetcher` — GPS coordinates, always shows 60-second confirmation dialog (Protocol 1) |
+| ✅ | `camera_capture` — takes photo, sends it back to Telegram, always confirms first (Protocol 1) |
+| ✅ | Out-of-Band Pairing — 6-character PIN, 10-minute window, single-use (Protocol 6) |
+| ✅ | TTL Tokens — paired access persists across relay restarts, expires after 30 days (Protocol 4) |
+| ✅ | SMS Kill Switch — one SMS disables all tools and stops the service instantly (Protocol 7) |
 | ✅ | Full callback loop: Android POSTs result → relay → Claude interprets → natural language answer |
 | ✅ | Language detection — Claude answers in the same language the question was asked |
-| ✅ | Offline timeout — 30-second grace period, then "device did not respond" notice |
-| 🔜 | `media_control`, `location_fetcher`, `camera_capture` tools (Phase 3) |
-| 🔜 | Security protocols — encryption, pairing, kill switch (Phase 3) |
+| ✅ | Offline timeout — 70-second grace period, then "device did not respond" notice |
 
 **Want to try it today?**
 
@@ -151,9 +155,9 @@ All you need for guides 1–3: Java 21, Maven, a Telegram bot token (free, 2 min
 
 | Tag | What's included |
 |---|---|
-| `v0.1.0` | Relay server: Telegram webhook + Claude intent parsing + FCM dispatch |
-| `v0.2.0` | Android app: first real tool working end-to-end (`audio_manager`) |
-| `v0.3.0` | All 6 tools + all 8 security protocols |
+| `v0.1.0` ✅ | Relay server: Telegram webhook + Claude intent parsing + FCM dispatch |
+| `v0.2.0` ✅ | Android app: first real tool working end-to-end (`audio_manager`) |
+| `v0.3.0` ✅ | All 6 tools + all 8 security protocols |
 | `v1.0.0` | Stable release: relay + Android + docs + self-hosting guide |
 
 ---
