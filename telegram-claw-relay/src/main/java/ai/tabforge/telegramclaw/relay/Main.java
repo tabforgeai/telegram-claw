@@ -71,7 +71,10 @@ public class Main {
         }
 
         String authorizedIds = System.getenv("AUTHORIZED_USER_IDS");
-        AuthorizationService authorizationService = new AuthorizationService(authorizedIds);
+        String tokenStorePath = System.getenv().getOrDefault("TOKEN_STORE_PATH", "tokens.json");
+        long tokenTtlDays = Long.parseLong(System.getenv().getOrDefault("TOKEN_TTL_DAYS", "30"));
+        TokenStore tokenStore = new TokenStore(tokenStorePath, tokenTtlDays);
+        AuthorizationService authorizationService = new AuthorizationService(authorizedIds, tokenStore);
 
         AnthropicClient anthropicClient = AnthropicOkHttpClient.fromEnv();
         IntentParser intentParser = new IntentParser(anthropicClient);
@@ -140,6 +143,8 @@ public class Main {
         String publicKey     = System.getenv("DEVICE_PUBLIC_KEY");
         String model         = System.getenv().getOrDefault("CLAUDE_MODEL", "claude-haiku-4-5-20251001");
         String port          = System.getenv().getOrDefault("PORT", "8080");
+        String tokenStorePath = System.getenv().getOrDefault("TOKEN_STORE_PATH", "tokens.json");
+        String tokenTtlDays  = System.getenv().getOrDefault("TOKEN_TTL_DAYS", "30");
 
         String tokenStatus       = (token       != null && !token.isBlank())       ? "SET" : "NOT SET (required)";
         String webhookStatus     = (webhook     != null && !webhook.isBlank())     ? webhook : "NOT SET — run ngrok first";
@@ -150,7 +155,7 @@ public class Main {
         String cryptoStatus      = (publicKey   != null && !publicKey.isBlank())   ? "SET (E2E enabled)" : "NOT SET — plaintext FCM";
 
         log.info("---------------------------------------------------");
-        log.info("  Telegram Claw Relay Server  |  Phase 2 Day 24");
+        log.info("  Telegram Claw Relay Server  |  Phase 2 Day 26");
         log.info("---------------------------------------------------");
         log.info("  PORT:                           {}", port);
         log.info("  TELEGRAM_BOT_TOKEN:             {}", tokenStatus);
@@ -159,6 +164,8 @@ public class Main {
         log.info("  CLAUDE_MODEL:                   {}", model);
         log.info("  GOOGLE_APPLICATION_CREDENTIALS: {}", credentialsStatus);
         log.info("  FCM_DEVICE_TOKEN:               {}", fcmTokenStatus);
+        log.info("  TOKEN_STORE_PATH:               {}", tokenStorePath);
+        log.info("  TOKEN_TTL_DAYS:                 {}", tokenTtlDays);
         log.info("  DEVICE_PUBLIC_KEY:              {}", cryptoStatus);
         log.info("  AUTHORIZED_USER_IDS:            {}", authStatus);
         log.info("---------------------------------------------------");

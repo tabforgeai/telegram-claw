@@ -29,6 +29,7 @@ public class AuthorizationService {
 
     private final CopyOnWriteArraySet<Long> authorizedIds;
     private final boolean openAccess;
+    private final TokenStore tokenStore;
 
     /**
      * Parses the comma-separated list of authorized Telegram user IDs.
@@ -44,7 +45,8 @@ public class AuthorizationService {
      *                             comma-separated Telegram user IDs (e.g. "8608523419,123456789");
      *                             null or blank means open access — all senders are accepted
      */
-    public AuthorizationService(String authorizedIdsEnvVar) {
+    public AuthorizationService(String authorizedIdsEnvVar, TokenStore tokenStore) {
+        this.tokenStore = tokenStore;
         if (authorizedIdsEnvVar == null || authorizedIdsEnvVar.isBlank()) {
             this.authorizedIds = new CopyOnWriteArraySet<>();
             this.openAccess = true;
@@ -83,7 +85,8 @@ public class AuthorizationService {
      */
     public boolean isAuthorized(long telegramUserId) {
         if (openAccess) return true;
-        return authorizedIds.contains(telegramUserId);
+        if (authorizedIds.contains(telegramUserId)) return true;
+        return tokenStore != null && tokenStore.isValid(telegramUserId);
     }
 
     /**
@@ -94,8 +97,14 @@ public class AuthorizationService {
      * @param chatId      Telegram user ID to authorize
      * @param senderName  display name (for logging only)
      */
+    /** Returns true if this ID had a token that expired during the current relay session. */
+    public boolean wasExpired(long chatId) {
+        return tokenStore != null && tokenStore.wasExpired(chatId);
+    }
+
     public void addAuthorizedId(long chatId, String senderName) {
         authorizedIds.add(chatId);
+        if (tokenStore != null) tokenStore.store(chatId, senderName);
         log.info("[AUTH] {} (id={}) added to authorized set via pairing.", senderName, chatId);
     }
 

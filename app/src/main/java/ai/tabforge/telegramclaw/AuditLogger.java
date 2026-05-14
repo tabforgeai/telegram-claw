@@ -6,8 +6,10 @@ import android.util.Log;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -125,6 +127,55 @@ public class AuditLogger {
      * @return all log lines (excluding header) joined by newline, newest first;
      *         returns an empty string if the log has no entries yet
      */
+    /**
+     * Removes log entries older than {@code keepDays} days, rewriting the file in place.
+     * Call once at app startup from {@link MainActivity} to keep the log bounded.
+     *
+     * @param keepDays  entries older than this many days are deleted; 0 clears everything
+     */
+    public void pruneOlderThan(int keepDays) {
+        try {
+            List<String> lines = Files.readAllLines(logFile.toPath());
+            if (lines.size() <= 1) return;
+
+            Instant cutoff = Instant.now().minusSeconds(keepDays * 86_400L);
+            List<String> kept = new ArrayList<>();
+            kept.add(lines.get(0)); // header always stays
+            int pruned = 0;
+            for (int i = 1; i < lines.size(); i++) {
+                try {
+                    Instant ts = Instant.parse(lines.get(i).split(",")[0]);
+                    if (ts.isAfter(cutoff)) {
+                        kept.add(lines.get(i));
+                    } else {
+                        pruned++;
+                    }
+                } catch (Exception ignored) {
+                    kept.add(lines.get(i)); // keep malformed lines rather than silently lose them
+                }
+            }
+            if (pruned > 0) {
+                Files.write(logFile.toPath(), kept, StandardCharsets.UTF_8);
+                Log.i(TAG, "Pruned " + pruned + " log entries older than " + keepDays + " days.");
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to prune audit log: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Erases all log entries, keeping only the CSV header row.
+     * Called from the "Clear" button in {@link MainActivity}.
+     */
+    public void clearLog() {
+        try (FileWriter fw = new FileWriter(logFile, false)) {
+            fw.write(CSV_HEADER);
+            Log.i(TAG, "Audit log cleared by device owner.");
+        } catch (IOException e) {
+            Log.e(TAG, "Failed to clear audit log: " + e.getMessage());
+        }
+    }
+
     public String readNewestFirst() {
         try {
             List<String> lines = Files.readAllLines(logFile.toPath());

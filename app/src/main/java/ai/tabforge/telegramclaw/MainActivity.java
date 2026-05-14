@@ -12,7 +12,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
@@ -52,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
         refreshAllSwitches();
         // Live listener — fires immediately when KillSwitchReceiver changes permissions
         // in the same process (e.g., SMS arrives while MainActivity is visible).
-        permChangeListener = (prefs, key) -> refreshAllSwitches();
+        permChangeListener = (prefs, key) -> refreshPermissionSummary();
         getSharedPreferences("claw_permissions", MODE_PRIVATE)
                 .registerOnSharedPreferenceChangeListener(permChangeListener);
     }
@@ -67,17 +66,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshAllSwitches() {
-        refreshSwitch(R.id.switch_audio_manager,       "audio_manager");
-        refreshSwitch(R.id.switch_get_device_context,  "get_device_context");
-        refreshSwitch(R.id.switch_media_control,       "media_control");
-        refreshSwitch(R.id.switch_notification_sender, "notification_sender");
-        refreshSwitch(R.id.switch_location_fetcher,    "location_fetcher");
-        refreshSwitch(R.id.switch_camera_capture,      "camera_capture");
+        refreshPermissionSummary();
     }
 
-    private void refreshSwitch(int switchId, String toolName) {
-        SwitchCompat toggle = findViewById(switchId);
-        if (toggle != null) toggle.setChecked(permissionManifest.isEnabled(toolName));
+    private void refreshPermissionSummary() {
+        String[] tools = {"audio_manager", "get_device_context", "media_control",
+                          "notification_sender", "location_fetcher", "camera_capture"};
+        int count = 0;
+        for (String tool : tools) {
+            if (permissionManifest.isEnabled(tool)) count++;
+        }
+        TextView summary = findViewById(R.id.permission_summary);
+        if (summary != null) summary.setText(count + " of 6 tools enabled");
     }
 
     @Override
@@ -100,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         setupBotTokenSection();
         setupPairingSection();
         setupKillSwitchSection();
-        setupPermissionToggles();
+        setupPermissionSummarySection();
         setupAuditLogSection();
     }
 
@@ -266,26 +266,10 @@ public class MainActivity extends AppCompatActivity {
      * <p>Each toggle reflects the current stored state on activity start.
      * Changes take effect immediately and persist across reboots — no Save button needed.</p>
      */
-    private void setupPermissionToggles() {
-        wireSwitch(R.id.switch_audio_manager,       "audio_manager");
-        wireSwitch(R.id.switch_get_device_context,  "get_device_context");
-        wireSwitch(R.id.switch_media_control,       "media_control");
-        wireSwitch(R.id.switch_notification_sender, "notification_sender");
-        wireSwitch(R.id.switch_location_fetcher,    "location_fetcher");
-        wireSwitch(R.id.switch_camera_capture,      "camera_capture");
-    }
-
-    /**
-     * Wires a single SwitchCompat toggle to a tool entry in {@link PermissionManifest}.
-     *
-     * @param switchId   resource ID of the SwitchCompat view
-     * @param toolName   tool identifier to read/write in PermissionManifest
-     */
-    private void wireSwitch(int switchId, String toolName) {
-        SwitchCompat toggle = findViewById(switchId);
-        toggle.setChecked(permissionManifest.isEnabled(toolName));
-        toggle.setOnCheckedChangeListener((btn, isChecked) ->
-                permissionManifest.setEnabled(toolName, isChecked));
+    private void setupPermissionSummarySection() {
+        refreshPermissionSummary();
+        findViewById(R.id.btn_manage_permissions).setOnClickListener(v ->
+                startActivity(new Intent(this, PermissionSettingsActivity.class)));
     }
 
     /**
@@ -296,15 +280,31 @@ public class MainActivity extends AppCompatActivity {
      * since the activity was opened (commands can arrive via FCM while the screen is on).</p>
      */
     private void setupAuditLogSection() {
-        TextView logText = findViewById(R.id.audit_log_text);
+        auditLogger.pruneOlderThan(30);
+
+        TextView logText  = findViewById(R.id.audit_log_text);
         Button refreshBtn = findViewById(R.id.btn_refresh_log);
+        Button clearBtn   = findViewById(R.id.btn_clear_log);
+        Button toggleBtn  = findViewById(R.id.btn_toggle_log);
 
         Runnable refresh = () -> {
             String entries = auditLogger.readNewestFirst();
             logText.setText(entries.isEmpty() ? "No entries yet." : entries);
         };
 
-        refresh.run();
+        toggleBtn.setOnClickListener(v -> {
+            boolean visible = logText.getVisibility() == android.view.View.VISIBLE;
+            logText.setVisibility(visible ? android.view.View.GONE : android.view.View.VISIBLE);
+            toggleBtn.setText(visible ? "Show Log ▼" : "Hide Log ▲");
+            if (!visible) refresh.run(); // refresh content when expanding
+        });
+
         refreshBtn.setOnClickListener(v -> refresh.run());
+
+        clearBtn.setOnClickListener(v -> {
+            auditLogger.clearLog();
+            logText.setText("No entries yet.");
+            Toast.makeText(this, "Audit log cleared.", Toast.LENGTH_SHORT).show();
+        });
     }
 }

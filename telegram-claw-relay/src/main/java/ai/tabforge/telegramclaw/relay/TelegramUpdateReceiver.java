@@ -186,8 +186,16 @@ public class TelegramUpdateReceiver implements HttpHandler {
         }
 
         if (!authorizationService.isAuthorized(sender.getId())) {
-            log.warn("[DENIED] Unauthorized sender: {} (id={}) — message rejected.",
-                    sender.displayName(), sender.getId());
+            if (authorizationService.wasExpired(sender.getId())) {
+                responseRouter.sendReply(message.getChat().getId(),
+                        "Your access has expired. Ask the device owner to generate a new pairing code.",
+                        "expired");
+                log.warn("[DENIED] {} (id={}) — token expired, re-pair required.",
+                        sender.displayName(), sender.getId());
+            } else {
+                log.warn("[DENIED] Unauthorized sender: {} (id={}) — message rejected.",
+                        sender.displayName(), sender.getId());
+            }
             return;
         }
 
