@@ -183,7 +183,6 @@ Full self-hosting guide coming with `v1.0.0`.
 |---|---|
 | Google Find My Device | Only your own device, no AI, no extensibility |
 | Android automation tools | Require a PC with ADB connected — not usable remotely |
-| OpenClaw | Explicit command syntax required — no natural language, no AI |
 | Telegram bots (DIY) | You'd have to build everything in this repo yourself |
 
 Most Android remote-control tools are built for one of two audiences: developers with a PC
