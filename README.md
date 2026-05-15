@@ -23,7 +23,7 @@ No commands. No syntax. No technical knowledge required from the sender.
 
 ## For the technically curious
 
-Natural language → **Claude AI** → Android hardware control — over Telegram, with no cloud dependency.
+Natural language → **Groq** (free, default) or **Claude** → Android hardware control — over Telegram, with no cloud dependency.
 
 Each person creates a dedicated Telegram bot (2 minutes, free via BotFather).
 A self-hosted Java relay server receives Telegram messages, calls the Claude API to parse intent,
@@ -144,10 +144,8 @@ The fourth runs the complete loop on a real phone.
 
 All you need for guides 1–3: Java 21, Maven, a Telegram bot token (free, 2 minutes via BotFather), and an Anthropic API key.
 
-> **Note:** During development, the relay server uses the Anthropic API (Claude Haiku) for intent parsing.
-> The planned default for the stable release is the **Groq API** — which has a free tier of 14,400 requests/day,
-> meaning typical personal use costs nothing. The model is switchable via a single environment variable;
-> no code changes required.
+> **Default AI provider:** The relay server uses **Groq** (free tier: 14,400 requests/day — typical personal use costs nothing).
+> Switch to Claude by setting `LLM_PROVIDER=anthropic`. No code changes required.
 
 ---
 
@@ -184,11 +182,33 @@ Full self-hosting guide coming with `v1.0.0`.
 | Tool | What's missing |
 |---|---|
 | Google Find My Device | Only your own device, no AI, no extensibility |
-| DroidRun / zerotap | No Telegram, no P2P, requires a PC, developer tool only |
+| Android automation tools | Require a PC with ADB connected — not usable remotely |
 | OpenClaw | Explicit command syntax required — no natural language, no AI |
 | Telegram bots (DIY) | You'd have to build everything in this repo yourself |
 
-The gap Telegram Claw fills: **natural language + proper Android permissions + self-hosted + no technical knowledge required from the sender.**
+Most Android remote-control tools are built for one of two audiences: developers with a PC
+connected via ADB, or power users with root access. They treat automation as the goal and treat
+the controlled device as infrastructure.
+
+Telegram Claw is built for a different relationship:
+
+- **No PC, no ADB, no root.** The only connection between Person A and Person B's device is a
+  Telegram message — over the internet, no USB cable, no developer mode required on Person B's
+  side.
+
+- **Built for your primary phone.** Other automation tools are explicitly not meant for everyday
+  devices. Telegram Claw is designed for a phone carried 24 hours a day by someone who isn't
+  technical.
+
+- **Consent is the architecture, not a setting.** Location and camera always require a
+  confirmation dialog on Person B's device. There is no way to bypass it remotely. If Person B
+  doesn't tap Allow within 60 seconds, the command is automatically denied.
+
+- **Person B doesn't need to know anything technical.** They install an APK and enable the tools
+  they are comfortable with. Person A does all the setup.
+
+- **You control the infrastructure.** The relay runs on your server. No Telegram Claw company
+  sees your messages, your location, or your camera photos.
 
 ---
 
