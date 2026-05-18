@@ -54,6 +54,7 @@ public class PermissionSettingsActivity extends AppCompatActivity {
         wireSwitch(R.id.switch_notification_sender, "notification_sender");
         wireSwitch(R.id.switch_location_fetcher,    "location_fetcher");
         wireSwitch(R.id.switch_camera_capture,      "camera_capture");
+        wireSwitch(R.id.switch_app_launcher,        "app_launcher");
     }
 
     @Override
@@ -88,6 +89,7 @@ public class PermissionSettingsActivity extends AppCompatActivity {
         refreshSwitch(R.id.switch_notification_sender, "notification_sender");
         refreshSwitch(R.id.switch_location_fetcher,    "location_fetcher");
         refreshSwitch(R.id.switch_camera_capture,      "camera_capture");
+        refreshSwitch(R.id.switch_app_launcher,        "app_launcher");
     }
 
     private void refreshSwitch(int switchId, String toolName) {

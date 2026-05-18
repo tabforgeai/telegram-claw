@@ -247,4 +247,9 @@ ngrok URLs change every time you restart ngrok. For a permanent setup:
 - Use a static domain or a free service like [Render](https://render.com) or [Railway](https://railway.app)
 - Set `WEBHOOK_URL` once and never touch it again
 
-Full production deployment guide coming with v1.1.0.
+### Alternative: Run the relay on an Android phone via Termux
+
+If you have an old Android phone lying around, you can run the relay on it —
+no computer, no VPS, no monthly cost.
+
+See [relay-on-android-termux.md](relay-on-android-termux.md) for the full guide.

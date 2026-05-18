@@ -183,7 +183,7 @@ public class GroqLlmClient implements IntentParser {
 
     // ── Tool manifest ────────────────────────────────────────────────────────────
 
-    private static List<Map<String, Object>> buildToolManifest() {
+    protected List<Map<String, Object>> buildToolManifest() {
         return List.of(
                 func("get_device_context",
                         "Reads the current state of the device: battery level, charging status, " +

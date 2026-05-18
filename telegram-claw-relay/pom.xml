@@ -64,6 +64,23 @@
                 </configuration>
             </plugin>
 
+            <!-- Thin lib JAR: used as a compile-time dependency by telegram-claw-enterprise -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <executions>
+                    <execution>
+                        <id>lib</id>
+                        <phase>package</phase>
+                        <goals><goal>jar</goal></goals>
+                        <configuration>
+                            <classifier>lib</classifier>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Fat JAR: bundles all dependencies into one executable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

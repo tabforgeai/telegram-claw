@@ -27,3 +27,6 @@ app/.cxx/
 
 # Firebase config — contains API keys, never commit
 app/google-services.json
+
+# Enterprise Edition — proprietary, not on GitHub
+telegram-claw-enterprise/

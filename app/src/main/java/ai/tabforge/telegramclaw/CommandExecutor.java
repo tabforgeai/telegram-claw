@@ -9,6 +9,7 @@ import java.util.concurrent.TimeUnit;
 
 import java.io.File;
 
+import ai.tabforge.telegramclaw.tool.AppLauncherTool;
 import ai.tabforge.telegramclaw.tool.AudioManagerTool;
 import ai.tabforge.telegramclaw.tool.CameraCaptureTool;
 import ai.tabforge.telegramclaw.tool.DeviceContextTool;
@@ -118,6 +119,9 @@ public class CommandExecutor {
                 break;
             case "camera_capture":
                 executeCameraCapture(paramsJson, chatId);
+                break;
+            case "app_launcher":
+                executeAppLauncher(paramsJson, chatId);
                 break;
             default:
                 Log.w(TAG, "[UNKNOWN] Unrecognized tool: '" + tool + "' — ignoring.");
@@ -250,6 +254,18 @@ public class CommandExecutor {
         } catch (Exception e) {
             Log.e(TAG, "[camera_capture] Failed: " + e.getMessage());
             auditLogger.log(AuditLogger.Status.ERROR, "camera_capture", chatId, e.getMessage());
+        }
+    }
+
+    private void executeAppLauncher(String paramsJson, long chatId) {
+        try {
+            String result = new AppLauncherTool(context).execute(paramsJson);
+            Log.i(TAG, "[app_launcher] " + result);
+            auditLogger.log(AuditLogger.Status.SUCCESS, "app_launcher", chatId, result);
+            telegramReplyClient.sendCallback(chatId, "app_launcher", result);
+        } catch (Exception e) {
+            Log.e(TAG, "[app_launcher] Execution failed: " + e.getMessage());
+            auditLogger.log(AuditLogger.Status.ERROR, "app_launcher", chatId, e.getMessage());
         }
     }
 

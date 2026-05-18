@@ -99,7 +99,8 @@ public class PermissionManifest {
         SharedPreferences.Editor editor = prefs.edit();
         for (String tool : new String[]{
                 "audio_manager", "get_device_context", "media_control",
-                "notification_sender", "location_fetcher", "camera_capture"}) {
+                "notification_sender", "location_fetcher", "camera_capture",
+                "app_launcher"}) {
             editor.putBoolean(KEY_PREFIX + tool, false);
         }
         editor.apply();

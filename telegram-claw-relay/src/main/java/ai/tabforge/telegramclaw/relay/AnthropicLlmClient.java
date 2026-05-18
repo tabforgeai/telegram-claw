@@ -153,7 +153,7 @@ public class AnthropicLlmClient implements IntentParser {
         }
     }
 
-    private static List<Tool> buildToolManifest() {
+    protected List<Tool> buildToolManifest() {
         return List.of(
                 buildGetDeviceContextTool(),
                 buildMediaControlTool(),
