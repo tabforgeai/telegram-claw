@@ -185,8 +185,15 @@ public class AnthropicLlmClient implements IntentParser {
                 .description(
                         "Controls media playback on the device. " +
                         "PLAY/PAUSE/SKIP control the active media session (music, podcast, video). " +
-                        "OPEN_URL opens a Spotify or YouTube link and starts playing it. " +
-                        "Use when the sender wants to play, stop, or change what's playing.")
+                        "OPEN_URL searches for and opens music or video. " +
+                        "IMPORTANT: You do NOT know real Spotify/YouTube track IDs — never generate " +
+                        "URLs with specific track, album or artist IDs. Always use search URLs instead. " +
+                        "Default to YouTube search (works on all devices): " +
+                        "https://www.youtube.com/results?search_query=SONG+NAME (spaces → +). " +
+                        "Use Spotify ONLY if sender explicitly says Spotify, and use this exact format: " +
+                        "spotify:search:SONG NAME (do NOT use open.spotify.com URLs). " +
+                        "Examples: 'play Despacito' → https://www.youtube.com/results?search_query=Despacito; " +
+                        "'play Despacito on Spotify' → spotify:search:Despacito")
                 .inputSchema(Tool.InputSchema.builder()
                         .properties(Tool.InputSchema.Properties.builder()
                                 .putAdditionalProperty("action", JsonValue.from(Map.of(
@@ -196,7 +203,9 @@ public class AnthropicLlmClient implements IntentParser {
                                 )))
                                 .putAdditionalProperty("url", JsonValue.from(Map.of(
                                         "type", "string",
-                                        "description", "Spotify or YouTube URL to open; required when action is OPEN_URL"
+                                        "description", "URL to open; required when action is OPEN_URL. " +
+                                                "YouTube search: https://www.youtube.com/results?search_query=SONG+NAME. " +
+                                                "Spotify search: spotify:search:SONG NAME"
                                 )))
                                 .build())
                         .required(List.of("action"))

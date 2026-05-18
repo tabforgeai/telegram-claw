@@ -196,12 +196,21 @@ public class GroqLlmClient implements IntentParser {
                 func("media_control",
                         "Controls media playback on the device. " +
                         "PLAY/PAUSE/SKIP control the active media session (music, podcast, video). " +
-                        "OPEN_URL opens a Spotify or YouTube link and starts playing it. " +
-                        "Use when the sender wants to play, stop, or change what's playing.",
+                        "OPEN_URL searches for and opens music or video. " +
+                        "IMPORTANT: You do NOT know real Spotify/YouTube track IDs — never generate " +
+                        "URLs with specific track, album or artist IDs. Always use search URLs instead. " +
+                        "Default to YouTube search (works on all devices): " +
+                        "https://www.youtube.com/results?search_query=SONG+NAME (spaces → +). " +
+                        "Use Spotify ONLY if sender explicitly says Spotify, and use this exact format: " +
+                        "spotify:search:SONG NAME (do NOT use open.spotify.com URLs). " +
+                        "Examples: 'play Despacito' → https://www.youtube.com/results?search_query=Despacito; " +
+                        "'play Despacito on Spotify' → spotify:search:Despacito",
                         Map.of(
                                 "action", enumProp("The playback action to perform",
                                         List.of("PLAY", "PAUSE", "SKIP", "OPEN_URL")),
-                                "url", strProp("Spotify or YouTube URL to open; required when action is OPEN_URL")
+                                "url", strProp("Search URL only — never use track/album/artist IDs. " +
+                                        "YouTube: https://www.youtube.com/results?search_query=SONG+NAME. " +
+                                        "Spotify: spotify:search:SONG NAME")
                         ),
                         List.of("action")),
 

@@ -1,5 +1,6 @@
 package ai.tabforge.telegramclaw.tool;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
@@ -125,10 +126,36 @@ public class MediaControlTool {
      * @return  result description including the URL that was opened
      */
     private String openUrl(String url) {
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(intent);
-        Log.i(TAG, "[media_control] OPEN_URL launched: " + url);
-        return "Opened URL: " + url;
+        String resolved = toSpotifyUri(url);
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(resolved));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            Log.i(TAG, "[media_control] OPEN_URL launched: " + resolved);
+            return "Opened URL: " + resolved;
+        } catch (ActivityNotFoundException e) {
+            // Spotify not installed — fall back to YouTube search if we have a query
+            if (resolved.startsWith("spotify:search:")) {
+                String query = resolved.substring("spotify:search:".length())
+                        .replace(" ", "+");
+                String ytUrl = "https://www.youtube.com/results?search_query=" + query;
+                Log.w(TAG, "[media_control] Spotify not installed, falling back to YouTube: " + ytUrl);
+                return openUrl(ytUrl);
+            }
+            Log.w(TAG, "[media_control] No app found for: " + resolved);
+            return "Could not open: no app installed to handle this URL. " +
+                    "Try asking to play on YouTube instead.";
+        }
+    }
+
+    // Converts open.spotify.com HTTPS URLs to spotify: URI scheme so the Spotify app
+    // handles them directly instead of falling back to a browser.
+    // e.g. https://open.spotify.com/track/ABC → spotify:track:ABC
+    private static String toSpotifyUri(String url) {
+        if (!url.startsWith("https://open.spotify.com/")) return url;
+        String path = url.substring("https://open.spotify.com/".length());
+        int q = path.indexOf('?');
+        if (q != -1) path = path.substring(0, q);
+        return "spotify:" + path.replace('/', ':');
     }
 }

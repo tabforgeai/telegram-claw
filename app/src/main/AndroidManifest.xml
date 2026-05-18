@@ -37,6 +37,11 @@
             android:exported="false" />
 
         <activity
+            android:name=".PermissionSettingsActivity"
+            android:exported="false"
+            android:label="Tool Permissions" />
+
+        <activity
             android:name=".ConfirmationActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:exported="false"

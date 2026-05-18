@@ -165,6 +165,7 @@ public class CommandExecutor {
         } catch (Exception e) {
             Log.e(TAG, "[media_control] Execution failed: " + e.getMessage());
             auditLogger.log(AuditLogger.Status.ERROR, "media_control", chatId, e.getMessage());
+            telegramReplyClient.sendCallback(chatId, "media_control", "Error: " + e.getMessage());
         }
     }
 
